@@ -44,14 +44,16 @@ needs to *show* someone else where they don't.
 
 ## Screenshots
 
-> _Real screenshots coming soon. In the meantime, open [`demo/index.html`](demo/index.html)
-> in your browser for a live playground._
+**Check alignment** — magenta guides pulled across a three-column layout to verify the axes line up:
 
-<!-- Drop screenshots here once captured:
-![Rulers & guides on a live site](docs/screenshot-live.png)
-![Auto-hiding rulers on mobile](docs/screenshot-mobile.png)
-![Popup](docs/screenshot-popup.png)
--->
+![Magenta guide lines checking column alignment on a live website](docs/screenshot-guides.png)
+
+**Flag a bug** — a rectangle marker highlights a real layout error (a word overflowing into the
+next column), ready to screenshot and send to a colleague, client or AI:
+
+![A rectangle marker highlighting a layout overflow bug](docs/screenshot-marker.png)
+
+> Want to try it yourself? Open [`demo/index.html`](demo/index.html) in your browser for a live playground.
 
 ---
 
