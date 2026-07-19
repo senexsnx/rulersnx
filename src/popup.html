@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      width: 220px; margin: 0; padding: 12px;
+      font: 13px/1.4 "Segoe UI", system-ui, Arial, sans-serif;
+      background: #1e1e28; color: #eee;
+    }
+    h1 { font-size: 13px; margin: 0 0 2px; letter-spacing: .02em; }
+    p.hint { font-size: 11px; color: #9a9aa8; margin: 0 0 10px; }
+    button {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; box-sizing: border-box; padding: 8px 10px; margin: 4px 0;
+      border: 1px solid rgba(255,255,255,.12); border-radius: 7px;
+      background: rgba(255,255,255,.06); color: #eee; font: inherit; cursor: pointer;
+    }
+    button:hover { background: rgba(255,255,255,.14); }
+    button.primary { background: #ff00ff; border-color: #ff00ff; color: #fff; font-weight: 600; }
+    button.primary.on { background: #2a2a34; border-color: rgba(255,255,255,.15); color: #eee; font-weight: 400; }
+    .row { display: flex; gap: 6px; }
+    .row button { margin: 4px 0; }
+    .colorrow { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px; }
+    .colorrow label { font-size: 12px; color: #cfcfda; }
+    input[type=color] { width: 30px; height: 26px; padding: 0; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; background: none; cursor: pointer; }
+    .kbd { font-size: 10px; color: #7f7f8c; margin-top: 10px; text-align: center; }
+    .kbd b { color: #b9b9c6; }
+  </style>
+</head>
+<body>
+  <h1>RulerSNX</h1>
+  <p class="hint">Lineal &amp; magenta Hilfslinien über jede Website legen.</p>
+
+  <button id="toggle" class="primary">Aktivieren</button>
+
+  <div class="row">
+    <button id="v">+ Vertikal</button>
+    <button id="h">+ Horizontal</button>
+  </div>
+  <button id="cross">+ Fadenkreuz (Mitte)</button>
+
+  <div class="colorrow">
+    <label for="color">Farbe</label>
+    <input type="color" id="color" value="#ff00ff">
+  </div>
+
+  <button id="clear">Alle löschen</button>
+
+  <p class="kbd">Aus dem Lineal ziehen · Linie anklicken + <b>Entf</b> löscht ·<br><b>Alt&nbsp;+&nbsp;G</b> zum Ein-/Ausschalten</p>
+
+  <script src="popup.js"></script>
+</body>
+</html>

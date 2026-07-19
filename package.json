@@ -1,0 +1,22 @@
+{
+  "name": "rulersnx",
+  "version": "1.0.0",
+  "description": "Illustrator-style ruler & draggable guide lines over any website — verify optical axes, alignment and spacing.",
+  "private": true,
+  "scripts": {
+    "test": "node test/guides.test.js"
+  },
+  "keywords": [
+    "ruler",
+    "guides",
+    "layout",
+    "alignment",
+    "browser-extension",
+    "web-design"
+  ],
+  "author": "senex",
+  "license": "MIT",
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
