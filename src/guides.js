@@ -27,6 +27,7 @@
   var drawArmed = false;      // "Markieren" mode: plain drag draws a marker
   var selected = null;        // currently selected guide OR shape
   var coarse = false;         // true while the last pointer seen was a finger
+  var revealed = false;       // coarse mode: rulers pulled in via the corner grip
 
   // ---------- small helpers ----------
   function css(el, styles) { for (var k in styles) el.style[k] = styles[k]; return el; }
@@ -144,6 +145,12 @@
     window.addEventListener('pointermove', notePointer, true);
     elTop.addEventListener('pointerdown', function (e) { startCreate(e, 'h'); });
     elLeft.addEventListener('pointerdown', function (e) { startCreate(e, 'v'); });
+    elCorner.addEventListener('pointerdown', function (e) {
+      if (!coarse) return; // with a mouse the corner keeps its 1.0.0 role
+      e.preventDefault();
+      e.stopPropagation();
+      toggleRulerReveal();
+    });
     window.addEventListener('resize', onResize, true);
     window.addEventListener('pointerdown', onDocPointerDown, true);
     window.addEventListener('pointerdown', onDrawPointerDown, true);
@@ -159,6 +166,7 @@
   // rulers never permanently cover the page content (esp. in narrow/mobile layouts).
   function onAutoHide(e) {
     if (!active || rulerMode !== 'auto' || dragActive) return;
+    if (coarse) return; // no hover on touch — the corner grip decides instead
     var top = topShown, left = leftShown;
     if (e.clientY < RULER) top = true; else if (e.clientY > HIDE_ZONE) top = false;
     if (e.clientX < RULER) left = true; else if (e.clientX > HIDE_ZONE) left = false;
@@ -270,11 +278,23 @@
     topShown = top; leftShown = left;
     elTop.style.display = top ? '' : 'none';
     elLeft.style.display = left ? '' : 'none';
-    elCorner.style.display = (top || left) ? '' : 'none';
+    // On touch the corner remains as the reveal grip — otherwise there would be
+    // nothing left to tap. With a mouse it hides along with the rulers, exactly
+    // as in 1.0.0.
+    elCorner.style.display = (top || left || coarse) ? '' : 'none';
   }
   function applyRulerVisibility() {
-    // 'on' => both visible; 'off'/'auto' => start hidden ('auto' reveals on edge hover)
-    setRulerVis(rulerMode === 'on', rulerMode === 'on');
+    // 'on' => both visible; 'off' => both hidden; 'auto' => hover (mouse) or
+    // the corner grip (touch) decides.
+    if (rulerMode === 'on') { setRulerVis(true, true); return; }
+    if (rulerMode === 'off') { setRulerVis(false, false); return; }
+    var show = coarse && revealed;
+    setRulerVis(show, show);
+  }
+  function toggleRulerReveal() {
+    revealed = !revealed;
+    applyRulerVisibility();
+    if (revealed) drawRulers();
   }
 
   // ---------- guides ----------

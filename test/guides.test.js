@@ -264,5 +264,38 @@ ok('pen counts as fine (has hover and precision)', !host7.classList.contains('wg
 fire7(w7, 'pointermove', { clientX: 300, clientY: 300 });
 ok('event without pointerType leaves the flag alone', !host7.classList.contains('wg-coarse'));
 
+console.log('22) on touch the corner grip reveals the rulers, hover does not');
+const dom8 = freshDom();
+const w8 = dom8.window;
+w8.eval(code);
+w8.WebGuides.activate();
+const sh8 = w8.document.getElementById('rulersnx-host').shadowRoot;
+const top8 = sh8.querySelector('.wg-ruler-top');
+const left8 = sh8.querySelector('.wg-ruler-left');
+const corner8 = sh8.querySelector('.wg-corner');
+function fire8(t, type, p) {
+  const e = new w8.Event(type, { bubbles: true, cancelable: true });
+  Object.assign(e, p || {});
+  t.dispatchEvent(e);
+}
+fire8(w8, 'pointermove', { clientX: 300, clientY: 300, pointerType: 'touch' });
+ok('rulers hidden on touch by default', top8.style.display === 'none');
+ok('corner stays as the grip on touch', corner8.style.display !== 'none');
+fire8(w8, 'pointermove', { clientX: 300, clientY: 5, pointerType: 'touch' });
+ok('hovering the edge does NOT reveal on touch', top8.style.display === 'none');
+fire8(corner8, 'pointerdown', { clientX: 5, clientY: 5, pointerType: 'touch' });
+ok('corner tap reveals top ruler', top8.style.display !== 'none');
+ok('corner tap reveals left ruler', left8.style.display !== 'none');
+fire8(corner8, 'pointerdown', { clientX: 5, clientY: 5, pointerType: 'touch' });
+ok('second corner tap hides them again', top8.style.display === 'none');
+
+console.log('23) with a mouse the corner hides along with the rulers (1.0.0 behaviour)');
+const dom9 = freshDom();
+const w9 = dom9.window;
+w9.eval(code);
+w9.WebGuides.activate();
+const sh9 = w9.document.getElementById('rulersnx-host').shadowRoot;
+ok('corner hidden with mouse in auto mode', sh9.querySelector('.wg-corner').style.display === 'none');
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
