@@ -361,5 +361,55 @@ ok('stylesheet exposes the hit variable', /--wg-hit/.test(shB.querySelector('sty
 fireB(wB, 'pointermove', { clientX: 300, clientY: 300, pointerType: 'mouse' });
 ok('back to fine restores the 11px offset', gB.style.transform === 'translateX(494.5px)');
 
+console.log('28) toolbar collapses on touch and follows the coarse flag');
+const domC = freshDom();
+const wC = domC.window;
+boot(wC);
+wC.WebGuides.activate();
+const shC = wC.document.getElementById('rulersnx-host').shadowRoot;
+const barC = shC.querySelector('.wg-toolbar');
+const gripC = shC.querySelector('.wg-bar-grip');
+function fireC(t, type, p) {
+  const e = new wC.Event(type, { bubbles: true, cancelable: true });
+  Object.assign(e, p || {});
+  t.dispatchEvent(e);
+}
+ok('grip element exists', !!gripC);
+ok('bar open with a mouse', barC.style.display !== 'none');
+ok('grip hidden with a mouse', gripC && gripC.style.display === 'none');
+fireC(wC, 'pointermove', { clientX: 300, clientY: 300, pointerType: 'touch' });
+ok('switching to touch collapses the bar', barC.style.display === 'none');
+ok('grip visible on touch', gripC && gripC.style.display !== 'none');
+fireC(gripC, 'click', {});
+ok('tapping the grip opens the bar', barC.style.display !== 'none');
+fireC(wC, 'pointermove', { clientX: 300, clientY: 300, pointerType: 'mouse' });
+ok('switching back to mouse reopens the bar', barC.style.display !== 'none');
+
+console.log('29) barOpen survives a persistence roundtrip');
+wC.WebGuides.addVertical(200); // force a save()
+const storeC = JSON.parse(wC.localStorage.getItem('rulersnx:example.com'));
+ok('barOpen persisted', storeC.barOpen === true);
+const domD = freshDom();
+const wD = domD.window;
+wD.localStorage.setItem('rulersnx:example.com', JSON.stringify({
+  color: '#ff00ff', rulerMode: 'auto', shapeType: 'rect',
+  barOpen: false, guides: [], shapes: []
+}));
+boot(wD);
+wD.WebGuides.activate();
+const shD = wD.document.getElementById('rulersnx-host').shadowRoot;
+ok('restored barOpen=false keeps the bar closed', shD.querySelector('.wg-toolbar').style.display === 'none');
+
+console.log('30) an old payload without barOpen still loads');
+const domE = freshDom();
+const wE = domE.window;
+wE.localStorage.setItem('rulersnx:example.com', JSON.stringify({
+  color: '#ff00ff', rulerMode: 'auto', shapeType: 'rect', guides: [], shapes: []
+}));
+boot(wE);
+wE.WebGuides.activate();
+const shE = wE.document.getElementById('rulersnx-host').shadowRoot;
+ok('missing barOpen defaults to open with a mouse', shE.querySelector('.wg-toolbar').style.display !== 'none');
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

@@ -42,7 +42,20 @@
     bar.appendChild(rulerBtn);
     bar.appendChild(btn('Löschen', 'Alle Hilfslinien löschen', function () { ctx.clearAll(); }));
     bar.appendChild(sep());
+    bar.appendChild(btn('⌄', 'Leiste einklappen', function () { ctx.setBarOpen(false); }));
     bar.appendChild(btn('✕', 'Ausblenden (Alt+G)', function () { ctx.deactivate(); }));
+
+    // Collapsed state: a single grip in the corner. On a narrow touch viewport
+    // the expanded bar would eat roughly a quarter of the screen.
+    var grip = make(); grip.className = 'wg-bar-grip';
+    grip.textContent = '⁘';
+    grip.title = 'RulerSNX einblenden';
+    grip.addEventListener('click', function () { ctx.setBarOpen(true); });
+
+    function setOpen(open) {
+      bar.style.display = open ? '' : 'none';
+      grip.style.display = open ? 'none' : '';
+    }
 
     function updateRulerBtn() {
       var m = ctx.getRulerMode();
@@ -58,6 +71,8 @@
 
     return {
       bar: bar,
+      grip: grip,
+      setOpen: setOpen,
       updateRulerBtn: updateRulerBtn,
       updateShapeBtns: updateShapeBtns,
       setColorValue: setColorValue

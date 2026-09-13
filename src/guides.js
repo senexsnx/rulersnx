@@ -30,6 +30,7 @@
   var selected = null;        // currently selected guide OR shape
   var coarse = false;         // true while the last pointer seen was a finger
   var revealed = false;       // coarse mode: rulers pulled in via the corner grip
+  var barOpen = true;         // toolbar expanded; collapsed to a grip on touch
 
   // ---------- small helpers ----------
   function css(el, styles) { for (var k in styles) el.style[k] = styles[k]; return el; }
@@ -62,6 +63,11 @@
     if (!host) return;
     if (coarse) host.classList.add('wg-coarse');
     else host.classList.remove('wg-coarse');
+    // Every flip of the flag forces the bar to match. Without this, a state
+    // saved open on the desktop would come back open on a phone viewport —
+    // exactly what this change is meant to prevent.
+    barOpen = !coarse;
+    if (tb) tb.setOpen(barOpen);
     applyRulerVisibility();
     guides.forEach(renderGuide); // the grab width changed, so the offset did too
     drawRulers();
@@ -75,6 +81,7 @@
         color: color,
         rulerMode: rulerMode,
         shapeType: shapeType,
+        barOpen: barOpen,
         guides: guides.map(function (g) { return { o: g.orient, p: Math.round(g.pos) }; }),
         shapes: shapes.map(function (s) {
           return { t: s.type, x: Math.round(s.x), y: Math.round(s.y), w: Math.round(s.w), h: Math.round(s.h) };
@@ -91,6 +98,7 @@
       if (d.rulerMode) rulerMode = d.rulerMode;
       else if (typeof d.showRulers === 'boolean') rulerMode = d.showRulers ? 'on' : 'off'; // migrate old setting
       if (d.shapeType) shapeType = d.shapeType;
+      if (typeof d.barOpen === 'boolean') barOpen = d.barOpen;
       (d.guides || []).forEach(function (g) { makeGuide(g.o, g.p, false); });
       (d.shapes || []).forEach(function (s) { makeShape(s.t, s.x, s.y, s.w, s.h, false); });
     } catch (e) {}
@@ -132,7 +140,16 @@
       '.wg-btn.wg-on{background:#ff00ff;border-color:#ff00ff;color:#fff}' +
       '.wg-sep{width:1px;height:18px;background:rgba(255,255,255,.15);margin:0 2px}' +
       '.wg-color{width:22px;height:22px;padding:0;border:1px solid rgba(255,255,255,.25);border-radius:5px;background:none;cursor:pointer}' +
-      '.wg-title{font-weight:600;opacity:.8;padding:0 6px 0 2px;letter-spacing:.02em}';
+      '.wg-title{font-weight:600;opacity:.8;padding:0 6px 0 2px;letter-spacing:.02em}' +
+      '.wg-bar-grip{position:fixed;right:14px;bottom:14px;width:' + HIT_COARSE + 'px;height:' + HIT_COARSE + 'px;' +
+        'display:flex;align-items:center;justify-content:center;border-radius:12px;' +
+        'background:rgba(24,24,30,.94);box-shadow:0 4px 18px rgba(0,0,0,.35);color:#eee;' +
+        'font:18px/1 "Segoe UI",system-ui,Arial,sans-serif;cursor:pointer;' +
+        'pointer-events:auto;z-index:5;touch-action:none}' +
+      // Finger-sized controls once the bar is expanded on touch.
+      ':host(.wg-coarse) .wg-btn{min-height:' + HIT_COARSE + 'px;padding:5px 12px}' +
+      ':host(.wg-coarse) .wg-color{width:' + HIT_COARSE + 'px;height:' + HIT_COARSE + 'px}' +
+      ':host(.wg-coarse) .wg-title{display:none}';
   }
 
   // ---------- build overlay ----------
@@ -158,6 +175,7 @@
 
     elToolbar = buildToolbar();
     sroot.appendChild(elToolbar);
+    sroot.appendChild(tb.grip);
 
     document.documentElement.appendChild(host);
 
@@ -227,6 +245,8 @@
       setColor: setColor,
       setShapeType: setShapeType,
       toggleDraw: toggleDraw,
+      getBarOpen: function () { return barOpen; },
+      setBarOpen: function (v) { barOpen = !!v; if (tb) tb.setOpen(barOpen); save(); },
       getRulerMode: function () { return rulerMode; },
       getShapeType: function () { return shapeType; },
       getDrawArmed: function () { return drawArmed; },
@@ -555,6 +575,7 @@
     applyColor();
     updateRulerBtn();
     updateShapeBtns();
+    if (tb) tb.setOpen(barOpen);
     applyRulerVisibility();
     drawRulers();
   }
