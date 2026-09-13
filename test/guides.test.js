@@ -3,6 +3,11 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 
 const code = fs.readFileSync(path.join(__dirname, '..', 'src', 'guides.js'), 'utf8');
+const toolbarCode = fs.readFileSync(path.join(__dirname, '..', 'src', 'toolbar.js'), 'utf8');
+
+// Same order the manifest uses: the toolbar module must exist before the engine
+// builds its overlay.
+function boot(w) { w.eval(toolbarCode); w.eval(code); return w.WebGuides; }
 
 const dom = new JSDOM('<!DOCTYPE html><html><body><h1>t</h1></body></html>', {
   url: 'https://example.com/',
@@ -11,7 +16,7 @@ const dom = new JSDOM('<!DOCTYPE html><html><body><h1>t</h1></body></html>', {
 });
 const win = dom.window;
 // jsdom viewport is 1024x768 by default
-win.eval(code);
+boot(win);
 const W = win.WebGuides;
 
 let pass = 0, fail = 0;
@@ -85,7 +90,7 @@ console.log('9) restore on fresh document');
 // seed storage, then load engine into a brand new DOM to test restore()
 const dom2 = new JSDOM('<!DOCTYPE html><html><body></body></html>', { url: 'https://example.com/', runScripts: 'outside-only', pretendToBeVisual: true });
 dom2.window.localStorage.setItem('rulersnx:example.com', JSON.stringify({ color: '#ff0000', showRulers: true, guides: [{ o: 'v', p: 111 }, { o: 'h', p: 222 }] }));
-dom2.window.eval(code);
+boot(dom2.window);
 dom2.window.WebGuides.activate();
 const sh2 = dom2.window.document.getElementById('rulersnx-host').shadowRoot;
 ok('restored 2 guides', sh2.querySelectorAll('.wg-guide').length === 2);
@@ -120,7 +125,7 @@ ok('Delete with no selection is a no-op', guides().length === cnt2);
 
 console.log('12) rulers auto-hide, reveal only on edge hover (fresh dom)');
 const dom3 = new JSDOM('<!DOCTYPE html><html><body></body></html>', { url: 'https://example.com/', runScripts: 'outside-only', pretendToBeVisual: true });
-const w3 = dom3.window; w3.eval(code); const W3 = w3.WebGuides;
+const w3 = dom3.window; boot(w3); const W3 = w3.WebGuides;
 W3.activate();
 const sh3 = w3.document.getElementById('rulersnx-host').shadowRoot;
 const top3 = sh3.querySelector('.wg-ruler-top');
@@ -188,7 +193,7 @@ ok('clearAll removes all shapes', shapes().length === 0);
 console.log('17) restore shapes on a fresh document');
 const dom4 = new JSDOM('<!DOCTYPE html><html><body></body></html>', { url: 'https://example.com/', runScripts: 'outside-only', pretendToBeVisual: true });
 dom4.window.localStorage.setItem('rulersnx:example.com', JSON.stringify({ color: '#ff00ff', rulerMode: 'auto', shapeType: 'rect', guides: [], shapes: [{ t: 'rect', x: 50, y: 60, w: 120, h: 80 }] }));
-dom4.window.eval(code); dom4.window.WebGuides.activate();
+boot(dom4.window); dom4.window.WebGuides.activate();
 const sh4 = dom4.window.document.getElementById('rulersnx-host').shadowRoot;
 ok('restored 1 shape', sh4.querySelectorAll('.wg-shape').length === 1);
 const rs = sh4.querySelector('.wg-shape');
@@ -208,7 +213,7 @@ console.log('18) guide keeps its absolute position across viewport changes');
 const dom5 = freshDom();
 const w5 = dom5.window;
 setViewport(w5, 1440, 900, false);
-w5.eval(code);
+boot(w5);
 w5.WebGuides.activate();
 w5.WebGuides.addVertical(800);
 const sh5 = w5.document.getElementById('rulersnx-host').shadowRoot;
@@ -228,7 +233,7 @@ w6.localStorage.setItem('rulersnx:example.com', JSON.stringify({
   color: '#ff00ff', rulerMode: 'auto', shapeType: 'rect',
   guides: [{ o: 'v', p: 800 }], shapes: []
 }));
-w6.eval(code);
+boot(w6);
 w6.WebGuides.activate();
 const sh6 = w6.document.getElementById('rulersnx-host').shadowRoot;
 const g6 = sh6.querySelector('.wg-guide');
@@ -246,7 +251,7 @@ ok('in-range guide rendered and visible', !!hg6 && hg6.style.display !== 'none')
 console.log('21) coarse flag follows the most recent pointer type');
 const dom7 = freshDom();
 const w7 = dom7.window;
-w7.eval(code);
+boot(w7);
 w7.WebGuides.activate();
 const host7 = w7.document.getElementById('rulersnx-host');
 ok('starts fine (no touch seen yet)', !host7.classList.contains('wg-coarse'));
@@ -267,7 +272,7 @@ ok('event without pointerType leaves the flag alone', !host7.classList.contains(
 console.log('22) on touch the corner grip reveals the rulers, hover does not');
 const dom8 = freshDom();
 const w8 = dom8.window;
-w8.eval(code);
+boot(w8);
 w8.WebGuides.activate();
 const sh8 = w8.document.getElementById('rulersnx-host').shadowRoot;
 const top8 = sh8.querySelector('.wg-ruler-top');
@@ -292,7 +297,7 @@ ok('second corner tap hides them again', top8.style.display === 'none');
 console.log('23) with a mouse the corner hides along with the rulers (1.0.0 behaviour)');
 const dom9 = freshDom();
 const w9 = dom9.window;
-w9.eval(code);
+boot(w9);
 w9.WebGuides.activate();
 const sh9 = w9.document.getElementById('rulersnx-host').shadowRoot;
 ok('corner hidden with mouse in auto mode', sh9.querySelector('.wg-corner').style.display === 'none');
@@ -300,7 +305,7 @@ ok('corner hidden with mouse in auto mode', sh9.querySelector('.wg-corner').styl
 console.log('24) pointercancel ends a drag cleanly and keeps the guide');
 const domA = freshDom();
 const wA = domA.window;
-wA.eval(code);
+boot(wA);
 wA.WebGuides.activate();
 wA.WebGuides.addVertical(500);
 const shA = wA.document.getElementById('rulersnx-host').shadowRoot;
@@ -337,7 +342,7 @@ ok('stylesheet sets touch-action none', /touch-action:\s*none/.test(shA.querySel
 console.log('27) grab zone grows on touch, the visible line does not');
 const domB = freshDom();
 const wB = domB.window;
-wB.eval(code);
+boot(wB);
 wB.WebGuides.activate();
 wB.WebGuides.addVertical(500);
 const shB = wB.document.getElementById('rulersnx-host').shadowRoot;

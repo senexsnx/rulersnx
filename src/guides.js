@@ -16,7 +16,8 @@
   var DEFAULT_COLOR = '#ff00ff';
 
   var host = null, sroot = null;
-  var elTop, elLeft, elCorner, elLayer, elToolbar, cvTop, cvLeft, colorInput, rulerBtn, rectBtn, circleBtn, markBtn;
+  var elTop, elLeft, elCorner, elLayer, elToolbar, cvTop, cvLeft;
+  var tb = null;              // handle returned by RulerSNXToolbar.build
   var active = false;
   var rulerMode = 'auto';     // 'auto' (reveal near edge) | 'on' (always) | 'off'
   var topShown = false, leftShown = false;
@@ -216,34 +217,23 @@
   }
 
   function buildToolbar() {
-    var bar = make(); bar.className = 'wg-toolbar';
-    var title = make(); title.className = 'wg-title'; title.textContent = 'RulerSNX'; bar.appendChild(title);
-    bar.appendChild(btn('+ Vertikal', 'Vertikale Hilfslinie in der Mitte', function () { addVertical(); }));
-    bar.appendChild(btn('+ Horizontal', 'Horizontale Hilfslinie in der Mitte', function () { addHorizontal(); }));
-    bar.appendChild(btn('+ Kreuz', 'Fadenkreuz in der Mitte', function () { addCross(); }));
-    bar.appendChild(sep());
-    colorInput = document.createElement('input');
-    colorInput.type = 'color'; colorInput.className = 'wg-color'; colorInput.value = color; colorInput.title = 'Farbe der Hilfslinien';
-    colorInput.addEventListener('input', function (e) { setColor(e.target.value); });
-    bar.appendChild(colorInput);
-    bar.appendChild(sep());
-    rectBtn = btn('▭', 'Rechteck aufziehen (Standard) — Shift+Ziehen auf der Seite', function () { setShapeType('rect'); });
-    circleBtn = btn('◯', 'Kreis/Ellipse aufziehen — Shift+Ziehen auf der Seite', function () { setShapeType('circle'); });
-    markBtn = btn('Markieren', 'Markier-Modus an/aus: normales Ziehen zieht eine Form auf (alternativ immer Shift+Ziehen)', toggleDraw);
-    bar.appendChild(rectBtn); bar.appendChild(circleBtn); bar.appendChild(markBtn);
-    bar.appendChild(sep());
-    rulerBtn = btn('Lineale: Auto', 'Lineale: Auto (nur am Rand) → An (immer) → Aus', toggleRulers);
-    bar.appendChild(rulerBtn);
-    bar.appendChild(btn('Löschen', 'Alle Hilfslinien löschen', clearAll));
-    bar.appendChild(sep());
-    bar.appendChild(btn('✕', 'Ausblenden (Alt+G)', deactivate));
-    return bar;
+    tb = window.RulerSNXToolbar.build({
+      addVertical: function () { addVertical(); },
+      addHorizontal: function () { addHorizontal(); },
+      addCross: function () { addCross(); },
+      clearAll: clearAll,
+      deactivate: deactivate,
+      toggleRulers: toggleRulers,
+      setColor: setColor,
+      setShapeType: setShapeType,
+      toggleDraw: toggleDraw,
+      getRulerMode: function () { return rulerMode; },
+      getShapeType: function () { return shapeType; },
+      getDrawArmed: function () { return drawArmed; },
+      getColor: function () { return color; }
+    });
+    return tb.bar;
   }
-  function btn(label, title, fn) {
-    var b = make(); b.className = 'wg-btn'; b.textContent = label; b.title = title;
-    b.addEventListener('click', fn); return b;
-  }
-  function sep() { var s = make(); s.className = 'wg-sep'; return s; }
 
   // ---------- rulers ----------
   function sizeCanvas(cv, w, h) {
@@ -291,9 +281,7 @@
     if (rulerMode !== 'off') drawRulers();
     save();
   }
-  function updateRulerBtn() {
-    if (rulerBtn) rulerBtn.textContent = 'Lineale: ' + (rulerMode === 'auto' ? 'Auto' : rulerMode === 'on' ? 'An' : 'Aus');
-  }
+  function updateRulerBtn() { if (tb) tb.updateRulerBtn(); }
   function setRulerVis(top, left) {
     topShown = top; leftShown = left;
     elTop.style.display = top ? '' : 'none';
@@ -449,11 +437,8 @@
     dragLoop(move, done, s.el, e.pointerId);
   }
   function setShapeType(t) { shapeType = t; updateShapeBtns(); save(); }
-  function updateShapeBtns() {
-    if (rectBtn) rectBtn.classList.toggle('wg-on', shapeType === 'rect');
-    if (circleBtn) circleBtn.classList.toggle('wg-on', shapeType === 'circle');
-  }
-  function toggleDraw() { drawArmed = !drawArmed; if (markBtn) markBtn.classList.toggle('wg-on', drawArmed); }
+  function updateShapeBtns() { if (tb) tb.updateShapeBtns(); }
+  function toggleDraw() { drawArmed = !drawArmed; updateShapeBtns(); }
 
   function inOurUI(path) {
     return path.some(function (el) {
@@ -553,7 +538,7 @@
       s.el.style.background = hexA(color, 0.10);
       if (s.selected) s.el.style.boxShadow = '0 0 0 2px #fff, 0 0 8px ' + color;
     });
-    if (colorInput) colorInput.value = color;
+    if (tb) tb.setColorValue(color);
   }
   function setColor(c) { color = c; applyColor(); save(); }
 
