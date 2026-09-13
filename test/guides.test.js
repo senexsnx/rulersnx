@@ -243,5 +243,26 @@ const hg6 = Array.from(sh6.querySelectorAll('.wg-guide'))
   .find(el => el.style.transform === 'translateY(294.5px)');
 ok('in-range guide rendered and visible', !!hg6 && hg6.style.display !== 'none');
 
+console.log('21) coarse flag follows the most recent pointer type');
+const dom7 = freshDom();
+const w7 = dom7.window;
+w7.eval(code);
+w7.WebGuides.activate();
+const host7 = w7.document.getElementById('rulersnx-host');
+ok('starts fine (no touch seen yet)', !host7.classList.contains('wg-coarse'));
+function fire7(t, type, p) {
+  const e = new w7.Event(type, { bubbles: true, cancelable: true });
+  Object.assign(e, p || {});
+  t.dispatchEvent(e);
+}
+fire7(w7, 'pointermove', { clientX: 300, clientY: 300, pointerType: 'touch' });
+ok('touch pointer switches to coarse', host7.classList.contains('wg-coarse'));
+fire7(w7, 'pointermove', { clientX: 300, clientY: 300, pointerType: 'mouse' });
+ok('mouse pointer switches back to fine', !host7.classList.contains('wg-coarse'));
+fire7(w7, 'pointermove', { clientX: 300, clientY: 300, pointerType: 'pen' });
+ok('pen counts as fine (has hover and precision)', !host7.classList.contains('wg-coarse'));
+fire7(w7, 'pointermove', { clientX: 300, clientY: 300 });
+ok('event without pointerType leaves the flag alone', !host7.classList.contains('wg-coarse'));
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

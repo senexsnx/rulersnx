@@ -26,10 +26,39 @@
   var shapeType = 'rect';     // current marker shape
   var drawArmed = false;      // "Markieren" mode: plain drag draws a marker
   var selected = null;        // currently selected guide OR shape
+  var coarse = false;         // true while the last pointer seen was a finger
 
   // ---------- small helpers ----------
   function css(el, styles) { for (var k in styles) el.style[k] = styles[k]; return el; }
   function make(tag, styles) { return css(document.createElement(tag || 'div'), styles || {}); }
+
+  // ---------- pointer environment ----------
+  // The flag always follows the most recently seen pointer type. In the
+  // devtools' responsive mode only one type exists at a time, so flipping the
+  // touch switch takes effect without a reload. A pen is NOT coarse — it has
+  // hover and precision.
+  function notePointer(e) {
+    if (!e || typeof e.pointerType !== 'string') return;
+    var next = e.pointerType === 'touch';
+    if (next === coarse) return;
+    coarse = next;
+    applyCoarse();
+  }
+  function detectCoarse() {
+    try {
+      if (typeof window.matchMedia === 'function' &&
+          window.matchMedia('(pointer: coarse)').matches) return true;
+    } catch (e) {}
+    return (window.navigator && window.navigator.maxTouchPoints || 0) > 0;
+  }
+  // CSS carries every visual consequence of the flag; JS only flips it.
+  function applyCoarse() {
+    if (!host) return;
+    if (coarse) host.classList.add('wg-coarse');
+    else host.classList.remove('wg-coarse');
+    applyRulerVisibility();
+    drawRulers();
+  }
 
   // ---------- persistence (per hostname) ----------
   function storeKey() { return NS + location.hostname; }
@@ -110,6 +139,9 @@
 
     document.documentElement.appendChild(host);
 
+    // Registered first so the flag is current when the handlers below run.
+    window.addEventListener('pointerdown', notePointer, true);
+    window.addEventListener('pointermove', notePointer, true);
     elTop.addEventListener('pointerdown', function (e) { startCreate(e, 'h'); });
     elLeft.addEventListener('pointerdown', function (e) { startCreate(e, 'v'); });
     window.addEventListener('resize', onResize, true);
@@ -118,6 +150,9 @@
     window.addEventListener('pointermove', onAutoHide, true);
     window.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('blur', function () { if (rulerMode === 'auto') setRulerVis(false, false); });
+
+    coarse = detectCoarse();
+    applyCoarse();
   }
 
   // In 'auto' mode: reveal a ruler only when the cursor nears its edge, so the
