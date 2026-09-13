@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "RulerSNX — Ruler & Guides",
   "version": "1.1.0",
-  "description": "Illustrator-style ruler & draggable magenta guide lines over any website — verify optical axes, alignment and spacing. Rulers auto-hide so they never cover your content.",
+  "description": "Illustrator-style ruler and draggable magenta guide lines over any website. Check optical axes, alignment and spacing. Rulers auto-hide so they never cover your content.",
   "action": {
     "default_popup": "src/popup.html",
     "default_title": "RulerSNX"

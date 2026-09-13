@@ -4,13 +4,13 @@
 
 # RulerSNX
 
-**Illustrator-style ruler & draggable guide lines over any website —
-verify optical axes, alignment and spacing while you build.**
+**Illustrator-style ruler and draggable guide lines over any website.
+Check optical axes, alignment and spacing while you build.**
 
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-4c7fff)
 ![Chrome · Edge · Firefox](https://img.shields.io/badge/Chrome%20·%20Edge%20·%20Firefox-supported-ff00ff)
 ![Runtime deps](https://img.shields.io/badge/runtime%20deps-0-2ecc71)
-![Tests](https://img.shields.io/badge/tests-52%20passing-2ecc71)
+![Tests](https://img.shields.io/badge/tests-100%20passing-2ecc71)
 ![License: MIT](https://img.shields.io/badge/License-MIT-f1c40f)
 
 </div>
@@ -19,66 +19,63 @@ verify optical axes, alignment and spacing while you build.**
 
 ## Why RulerSNX?
 
-When you build websites, you check them in the browser — but *is that headline really
-centered? Do the card edges line up? Is the vertical rhythm consistent across sections?*
+You build a page, you look at it in the browser, and you are not quite sure. Is that
+headline actually centered, or just close? Do the card edges line up? Does the vertical
+rhythm hold across sections?
 
-In **Illustrator** or **InDesign** you'd just pull a guide off the ruler and eyeball it
-against your layout. RulerSNX brings that exact muscle memory to the browser. It does two
-things:
+In Illustrator or InDesign you would pull a guide off the ruler and hold it against the
+layout. RulerSNX puts that same move in the browser.
 
-**1. Align better & catch mistakes.**
-Pull **magenta guide lines** off on-screen rulers, drop them onto any element, and verify
-**optical axes, alignment and spacing** on the real, rendered page — at any viewport size,
-including mobile emulation. Misaligned edges, off-center headings and broken vertical rhythm
-jump right out. No screenshots into a design tool, no dev-tools box-model hunting.
+Pull magenta guide lines off the on-screen rulers and drop them on any element. You are
+measuring the real rendered page at whatever viewport size you like, mobile emulation
+included. Misaligned edges and off-center headings stop being a hunch. You do not have to
+screenshot anything into a design tool or go digging through the box model in dev tools.
 
-**2. Point people at the right spot.**
-Draw a **rectangle or circle** around any region to mark it, then screenshot and share it.
-Perfect for telling a **colleague, a client, or an AI** *“look here — fix this”* without
-long explanations. The marker frames exactly the place you mean.
+The second use is pointing. Draw a rectangle or circle around a region, screenshot it, send
+it. It saves a paragraph of explaining which element you mean when you are talking to a
+colleague or pasting the image into a chat.
 
-**Made for:** front-end devs, web designers, and anyone who needs things to *line up* — or
-needs to *show* someone else where they don't.
+Built for front-end devs and web designers, and for anyone who needs to show someone else
+what is out of line.
 
 ---
 
 ## Screenshots
 
-**Check alignment** — magenta guides pulled across a three-column layout to verify the axes line up:
+Checking alignment, with guides pulled across a three-column layout to verify the axes:
 
 ![Magenta guide lines checking column alignment on a live website](docs/screenshot-guides.png)
 
-**Flag a bug** — a rectangle marker highlights a real layout error (a word overflowing into the
-next column), ready to screenshot and send to a colleague, client or AI:
+Flagging a bug, with a rectangle marker on a real layout error where a word overflows into
+the next column:
 
 ![A rectangle marker highlighting a layout overflow bug](docs/screenshot-marker.png)
 
-> Want to try it yourself? Open [`demo/index.html`](demo/index.html) in your browser for a live playground.
+> Open [`demo/index.html`](demo/index.html) in your browser for a playground to try it on.
 
 ---
 
 ## Features
 
-- 📐 **Rulers** along the top and left edge with a live px scale.
-- 🎯 **Pull out guides** like in Illustrator/InDesign — drag down from the top ruler for a
-  horizontal guide, drag right from the left ruler for a vertical one.
-- 💗 **Magenta by default**, colour freely changeable.
-- ✋ **Drag to reposition** with a live px position label.
-- 🖱️ **Click to select** a guide (it highlights), then press **`Entf` / `Delete`** to remove it.
-- ↩️ **Delete** also by double-clicking a guide or dragging it back into the ruler.
-- 🟪 **Mark a spot** — draw a **rectangle** (default) or **circle** over any region to point a
-  colleague or an AI at exactly the right place. Pick the shape in the toolbar, then draw with
-  **Shift + drag** on the page (or arm the **Markieren** button and just drag). Markers are
-  selectable, movable and deletable just like guides.
-- 🫥 **Rulers auto-hide** and only appear when the cursor reaches the top/left edge — so they
-  **never cover your content**, which matters a lot in narrow/mobile layouts. The **Lineale**
-  button cycles *Auto → An (always on) → Aus*.
-- 📌 **Fixed to the viewport** — guides stay put while you scroll, so you can verify the same
-  optical axis all the way down a long page.
-- 💾 **Saved per hostname** — your guides come back on reload.
-- ⌨️ **`Alt + G`** toggles the overlay anywhere.
-- 🔒 **Zero network access, no extra permissions**, everything rendered in a Shadow DOM so it
-  can't clash with the page's own CSS.
+- Rulers along the top and left edge with a live px scale.
+- Guides pulled out the Illustrator way: drag down from the top ruler for a horizontal
+  guide, drag right from the left ruler for a vertical one.
+- Magenta by default, colour freely changeable.
+- Drag to reposition, with a live px label on the guide.
+- Click a guide to select it, then `Entf` / `Delete` to remove it. Double-clicking it or
+  dragging it back into the ruler works too.
+- Region markers: draw a rectangle (default) or circle over any area to point at it. Pick
+  the shape in the toolbar, then draw with `Shift` + drag on the page, or arm the
+  `Markieren` button and drag normally. Markers select, move and delete like guides do.
+- Rulers auto-hide and only appear when the cursor reaches the top or left edge, so they
+  never cover your content. That matters most in narrow layouts. The `Lineale` button
+  cycles through `Auto`, `An` and `Aus`.
+- Guides are fixed to the viewport and stay put while you scroll, so you can follow one
+  optical axis down a long page.
+- Everything is saved per hostname and comes back on reload.
+- `Alt + G` toggles the overlay anywhere.
+- No network access and no extra permissions. The overlay renders in a Shadow DOM so it
+  cannot clash with the page's own CSS.
 
 ---
 
@@ -87,21 +84,24 @@ next column), ready to screenshot and send to a colleague, client or AI:
 RulerSNX is a single Manifest V3 codebase that runs on all three browsers.
 
 ### Chrome / Edge
+
 1. Open `chrome://extensions` (or `edge://extensions`).
-2. Enable **Developer mode** (top-right).
-3. Click **Load unpacked** and select this project folder (the one with `manifest.json`).
-4. Pin the **RulerSNX** icon, open any website, click it → **Aktivieren** (or press `Alt + G`).
+2. Enable developer mode, top right.
+3. Click `Load unpacked` and select this project folder, the one holding `manifest.json`.
+4. Pin the RulerSNX icon, open any website, click it and choose `Aktivieren` (or press
+   `Alt + G`).
 
 ### Firefox
-1. Open `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on…** and pick `manifest.json`.
-3. Done. *(Temporary add-ons are removed on restart. For a permanent install the add-on must
-   be signed via [addons.mozilla.org](https://addons.mozilla.org).)*
 
-> ⚠️ **First run — open a normal website first.** Browsers don't allow extensions to run on
-> internal pages: the Firefox/Chrome **start page**, `about:…`, `chrome://…` and the add-on
-> stores. If nothing happens when you click **Aktivieren**, you're on such a page — just go to
-> any real site (your own, or `example.com`) and click it again (or press **`Alt + G`**).
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Click `Load Temporary Add-on…` and pick `manifest.json`.
+3. That is it. Temporary add-ons disappear on restart. A permanent install needs the add-on
+   signed via [addons.mozilla.org](https://addons.mozilla.org).
+
+> **First run: open a normal website first.** Browsers do not let extensions run on internal
+> pages, which includes the Firefox and Chrome start page, anything under `about:` or
+> `chrome://`, and the add-on stores. If nothing happens when you click `Aktivieren`, you are
+> on such a page. Go to any real site, your own or `example.com`, and try again.
 
 ---
 
@@ -110,64 +110,87 @@ RulerSNX is a single Manifest V3 codebase that runs on all three browsers.
 | Action | How |
 |---|---|
 | Create a guide | Drag out of the top ruler (horizontal) or left ruler (vertical) |
-| Create at center | Toolbar: **+ Vertikal** / **+ Horizontal** / **+ Kreuz** |
+| Create at center | Toolbar: `+ Vertikal` / `+ Horizontal` / `+ Kreuz` |
 | Move a guide | Drag it; the label shows the exact px |
-| Select a guide | Click it (it highlights + glows) |
-| Delete selected | **`Entf` / `Delete`** key |
+| Select a guide | Click it; it highlights and glows |
+| Delete selected | `Entf` / `Delete` |
 | Delete a guide | Double-click it, or drag it back into the ruler |
-| Pick marker shape | Toolbar: **▭** rectangle (default) / **◯** circle |
-| Draw a marker | **Shift + drag** on the page, or arm **Markieren** then drag |
-| Move / delete a marker | Drag it; select + **`Entf`**, or double-click |
-| Rulers mode | **Lineale** button: *Auto → An → Aus* |
+| Pick marker shape | Toolbar: `▭` rectangle (default) or `◯` circle |
+| Draw a marker | `Shift` + drag on the page, or arm `Markieren` then drag |
+| Move or delete a marker | Drag it; select and press `Entf`, or double-click |
+| Rulers mode | `Lineale` button, cycling `Auto`, `An`, `Aus` |
 | Change colour | Colour swatch in the toolbar |
-| Clear everything | **Löschen** |
-| Toggle overlay | Toolbar icon, the popup, or **`Alt + G`** |
-| Deselect | **`Esc`** |
+| Clear everything | `Löschen` |
+| Toggle overlay | Toolbar icon, the popup, or `Alt + G` |
+| Deselect | `Esc` |
 
 ---
 
 ## How it works
 
-- The whole overlay lives in a **Shadow DOM** attached to `<html>`, so the page's styles
-  can't leak in and RulerSNX styles can't leak out.
-- Rulers are drawn on a `<canvas>` (crisp on HiDPI); guides are lightweight fixed-position
-  elements moved with CSS transforms.
-- **In `Auto` mode**, rulers are hidden until the cursor enters the top/left edge zone — you
-  reach for the ruler exactly when you want to pull a guide, and the content stays fully
-  visible and clickable the rest of the time.
-- Guides + settings are persisted in `localStorage`, namespaced per hostname (`rulersnx:…`).
-- **No permissions** are requested beyond running a content script on the current page, and
-  it never talks to the network.
+The whole overlay lives in a Shadow DOM attached to `<html>`, so the page's styles cannot
+leak in and RulerSNX styles cannot leak out.
+
+Rulers are drawn on a `<canvas>`, which keeps them crisp on HiDPI screens. Guides are
+lightweight fixed-position elements moved with CSS transforms.
+
+In `Auto` mode the rulers stay hidden until the cursor enters the top or left edge zone. You
+reach for the ruler exactly when you want to pull a guide, and the rest of the time the
+content stays visible and clickable.
+
+Guides and settings are persisted in `localStorage`, namespaced per hostname
+(`rulersnx:…`). Nothing is requested beyond running a content script on the current page,
+and the extension never talks to the network.
 
 ---
 
-## Privacy & permissions
+## Privacy and permissions
 
-RulerSNX is a local drawing tool — it does **not** collect, transmit or sell any data.
+RulerSNX is a local drawing tool. It does not collect, transmit or sell any data.
 
-- 🚫 **No network requests.** The extension never contacts any server; nothing you view or
-  draw ever leaves your machine.
-- 🚫 **No analytics, no tracking, no telemetry.**
-- 🚫 **No remote code** — everything ships inside the extension; nothing is fetched or
-  `eval`'d at runtime (Manifest V3 forbids remote code anyway).
-- 💾 **What it stores:** only your guide/marker coordinates and colour, saved locally
-  (`localStorage`, namespaced per hostname) so they return on reload.
-- 🌐 **Why it can run on all sites:** as a layout tool it has to draw its overlay on whatever
-  page you're checking, so its content script matches `<all_urls>`. It only reads
-  pointer/keyboard input for drawing — **it does not read the page's content.** A
-  least-privilege `activeTab` mode (access only when you click the icon) is on the roadmap.
+It makes no network requests at all, so nothing you view or draw leaves your machine. There
+is no analytics and no telemetry. There is no remote code either: everything ships inside
+the extension and nothing is fetched or `eval`'d at runtime, which Manifest V3 forbids
+anyway.
+
+What it stores is your guide and marker coordinates plus the colour, saved locally in
+`localStorage` under a per-hostname key so they return on reload.
+
+As for why it can run on all sites: a layout tool has to draw its overlay on whatever page
+you are checking, so the content script matches `<all_urls>`. It reads pointer and keyboard
+input for drawing and does not read the page's content. An `activeTab` mode, where access is
+granted only when you click the icon, is on the roadmap.
 
 ---
 
-## Development & tests
+## Mobile view in the devtools
 
-The engine is dependency-free at runtime. The test suite drives the real engine in a headless
-DOM (jsdom) and exercises every interaction — creating, dragging, selecting, deleting,
-colour, persistence/restore, and the auto-hide rulers.
+RulerSNX notices touch simulation in the responsive design mode by itself and adapts as
+soon as the first finger pointer shows up. No reload needed.
+
+Tap the `px` corner at the top left to bring the rulers in. There is no hover without a
+mouse, so the corner grip takes over showing and hiding them.
+
+The grab strip on a guide grows from 11px to 44px while the visible line stays 1px thin, so
+you can actually hit one with a finger. The toolbar collapses to a grip in the bottom right
+and expands again when you switch back to a mouse.
+
+Guides keep their absolute position when you change the viewport width. Anything outside
+the current width is hidden and comes back unchanged when you switch back.
+
+With a mouse, everything behaves the way it did in 1.0.0.
+
+---
+
+## Development and tests
+
+The engine has no runtime dependencies. The test suite drives the real engine in a headless
+DOM (jsdom) and covers creating, dragging, selecting and deleting, colour, persistence and
+restore, the auto-hide rulers, and the touch and responsive-mode behaviour.
 
 ```bash
 npm install   # dev-only: installs jsdom
-npm test      # 52 assertions, headless
+npm test      # 100 assertions, headless
 ```
 
 ---
@@ -177,7 +200,7 @@ npm test      # 52 assertions, headless
 ```
 manifest.json        Manifest V3 (Chromium + Firefox via browser_specific_settings)
 src/toolbar.js       The floating control bar and its collapsed grip
-src/guides.js        The engine — rulers, guides, drag, select, auto-hide, persistence
+src/guides.js        The engine: rulers, guides, drag, select, auto-hide, persistence
 src/content.js       Content script: popup/hotkey bridge to the engine
 src/popup.html/.js   Toolbar popup
 icons/               Toolbar icons
@@ -190,31 +213,12 @@ test/guides.test.js  Headless jsdom test suite
 
 ## Roadmap
 
-- Snapping to element edges & to other guides
-- "Guides scroll with the document" mode (document coordinates)
+- Snapping to element edges and to other guides
+- A mode where guides scroll with the document, in document coordinates
 - Distance readout between two guides
 - English UI / localization
-- Least-privilege **`activeTab`** mode (drop the broad `<all_urls>` host permission)
-- Signed builds for the Chrome Web Store, Edge Add-ons & AMO
-
----
-
-## Mobile view in the devtools
-
-RulerSNX detects touch simulation in the responsive design mode on its own and
-adapts as soon as the first finger pointer shows up — no reload needed.
-
-- **Reveal the rulers:** tap the `px` corner at the top left. There is no hover
-  without a mouse, so the corner grip takes over showing and hiding them.
-- **Grabbing guides:** the invisible grab strip grows from 11px to 44px while
-  the visible line stays 1px thin.
-- **Toolbar:** collapses to a grip in the bottom right on touch and expands
-  again when you switch back to a mouse.
-- **Changing viewport width:** guides keep their absolute position. Anything
-  outside the current width is hidden and comes back unchanged when you switch
-  back.
-
-With a mouse everything behaves exactly as it did in 1.0.0.
+- Least-privilege `activeTab` mode, dropping the broad `<all_urls>` host permission
+- Signed builds for the Chrome Web Store, Edge Add-ons and AMO
 
 ---
 
