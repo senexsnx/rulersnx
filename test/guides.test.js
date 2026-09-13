@@ -428,5 +428,32 @@ ok('css width stayed the same', cvF.style.width === wF.innerWidth + 'px');
 console.log('32) visualViewport is optional');
 ok('no visualViewport in jsdom, activate still worked', !!shF.querySelector('.wg-ruler-top'));
 
+console.log('33) a touchscreen laptop driven by a mouse starts in fine mode');
+// Real finding from a browser probe: maxTouchPoints was 10 while
+// '(pointer: coarse)' was false and '(pointer: fine)' true. Trusting
+// maxTouchPoints there would collapse the toolbar on every touchscreen laptop.
+function withPointerMedia(coarseMatches, touchPoints) {
+  const d = freshDom();
+  const w = d.window;
+  w.matchMedia = q => ({ matches: /coarse/.test(q) ? coarseMatches : !coarseMatches, media: q });
+  Object.defineProperty(w.navigator, 'maxTouchPoints', { value: touchPoints, configurable: true });
+  boot(w);
+  w.WebGuides.activate();
+  return w.document.getElementById('rulersnx-host').classList.contains('wg-coarse');
+}
+ok('touch hardware + fine primary pointer => fine', withPointerMedia(false, 10) === false);
+ok('coarse primary pointer => coarse', withPointerMedia(true, 10) === true);
+ok('no touch hardware => fine', withPointerMedia(false, 0) === false);
+
+console.log('34) without matchMedia the engine falls back to maxTouchPoints');
+const domG = freshDom();
+const wG = domG.window;
+delete wG.matchMedia;
+Object.defineProperty(wG.navigator, 'maxTouchPoints', { value: 5, configurable: true });
+boot(wG);
+wG.WebGuides.activate();
+ok('fallback used when matchMedia is missing',
+  wG.document.getElementById('rulersnx-host').classList.contains('wg-coarse') === true);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

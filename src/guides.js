@@ -49,10 +49,15 @@
     coarse = next;
     applyCoarse();
   }
+  // '(pointer: coarse)' asks about the PRIMARY pointing device, which is the
+  // question we care about. maxTouchPoints only says touch hardware exists — a
+  // touchscreen laptop reports 10 while being driven by a mouse, so it is a
+  // last resort for engines without matchMedia, never a fallback for "no match".
   function detectCoarse() {
     try {
-      if (typeof window.matchMedia === 'function' &&
-          window.matchMedia('(pointer: coarse)').matches) return true;
+      if (typeof window.matchMedia === 'function') {
+        return window.matchMedia('(pointer: coarse)').matches;
+      }
     } catch (e) {}
     return (window.navigator && window.navigator.maxTouchPoints || 0) > 0;
   }
