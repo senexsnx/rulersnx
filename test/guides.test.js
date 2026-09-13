@@ -194,5 +194,54 @@ ok('restored 1 shape', sh4.querySelectorAll('.wg-shape').length === 1);
 const rs = sh4.querySelector('.wg-shape');
 ok('restored shape geometry', rs.style.left === '50px' && rs.style.width === '120px');
 
+function setViewport(w, width, height, dispatch) {
+  Object.defineProperty(w, 'innerWidth', { value: width, configurable: true });
+  Object.defineProperty(w, 'innerHeight', { value: height, configurable: true });
+  if (dispatch !== false) w.dispatchEvent(new w.Event('resize', { bubbles: true }));
+}
+function freshDom() {
+  return new JSDOM('<!DOCTYPE html><html><body></body></html>',
+    { url: 'https://example.com/', runScripts: 'outside-only', pretendToBeVisual: true });
+}
+
+console.log('18) guide keeps its absolute position across viewport changes');
+const dom5 = freshDom();
+const w5 = dom5.window;
+setViewport(w5, 1440, 900, false);
+w5.eval(code);
+w5.WebGuides.activate();
+w5.WebGuides.addVertical(800);
+const sh5 = w5.document.getElementById('rulersnx-host').shadowRoot;
+const g5 = sh5.querySelector('.wg-guide');
+ok('guide sits at 800 on desktop', g5.style.transform === 'translateX(794.5px)');
+setViewport(w5, 375, 667);
+ok('guide hidden when outside the viewport', g5.style.display === 'none');
+ok('guide keeps 800 while hidden', g5.style.transform === 'translateX(794.5px)');
+setViewport(w5, 1440, 900);
+ok('guide returns intact at 800', g5.style.display !== 'none' && g5.style.transform === 'translateX(794.5px)');
+
+console.log('19) restore does not clamp guides to the current viewport');
+const dom6 = freshDom();
+const w6 = dom6.window;
+setViewport(w6, 375, 667, false);
+w6.localStorage.setItem('rulersnx:example.com', JSON.stringify({
+  color: '#ff00ff', rulerMode: 'auto', shapeType: 'rect',
+  guides: [{ o: 'v', p: 800 }], shapes: []
+}));
+w6.eval(code);
+w6.WebGuides.activate();
+const sh6 = w6.document.getElementById('rulersnx-host').shadowRoot;
+const g6 = sh6.querySelector('.wg-guide');
+ok('restored guide is hidden at 375px', g6.style.display === 'none');
+setViewport(w6, 1440, 900);
+ok('restored guide reappears at 800', g6.style.transform === 'translateX(794.5px)');
+
+console.log('20) a guide inside the viewport stays visible');
+setViewport(w6, 1440, 900);
+w6.WebGuides.addHorizontal(300);
+const hg6 = Array.from(sh6.querySelectorAll('.wg-guide'))
+  .find(el => el.style.transform === 'translateY(294.5px)');
+ok('in-range guide rendered and visible', !!hg6 && hg6.style.display !== 'none');
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

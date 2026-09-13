@@ -271,18 +271,27 @@
 
     elLayer.appendChild(wrap);
     guides.push(g);
-    setGuidePos(g, pos);
+    renderGuide(g); // pos is already set on g; restore() must not be clamped
     if (doSave !== false) save();
     return g;
   }
+  // Render only — never writes g.pos. A guide outside the current viewport is
+  // hidden but keeps its position, so switching viewport widths is lossless.
+  function renderGuide(g) {
+    var max = g.orient === 'v' ? window.innerWidth : window.innerHeight;
+    var visible = g.pos >= 0 && g.pos <= max;
+    g.wrap.style.display = visible ? '' : 'none';
+    if (!visible) return;
+    g.wrap.style.transform = g.orient === 'v'
+      ? 'translateX(' + (g.pos - HIT / 2) + 'px)'
+      : 'translateY(' + (g.pos - HIT / 2) + 'px)';
+    g.label.textContent = Math.round(g.pos) + ' px';
+  }
+  // User interaction only: clamp into the viewport, then render.
   function setGuidePos(g, pos) {
     var max = g.orient === 'v' ? window.innerWidth : window.innerHeight;
-    pos = Math.max(0, Math.min(pos, max));
-    g.pos = pos;
-    g.wrap.style.transform = g.orient === 'v'
-      ? 'translateX(' + (pos - HIT / 2) + 'px)'
-      : 'translateY(' + (pos - HIT / 2) + 'px)';
-    g.label.textContent = Math.round(pos) + ' px';
+    g.pos = Math.max(0, Math.min(pos, max));
+    renderGuide(g);
   }
   function showLabel(g, on) { g.label.style.display = on ? 'block' : 'none'; }
 
@@ -470,7 +479,7 @@
   function onResize() {
     if (!active) return;
     drawRulers();
-    guides.forEach(function (g) { setGuidePos(g, g.pos); });
+    guides.forEach(renderGuide);
   }
   function activate() {
     if (!host) { build(); restore(); }
