@@ -297,5 +297,41 @@ w9.WebGuides.activate();
 const sh9 = w9.document.getElementById('rulersnx-host').shadowRoot;
 ok('corner hidden with mouse in auto mode', sh9.querySelector('.wg-corner').style.display === 'none');
 
+console.log('24) pointercancel ends a drag cleanly and keeps the guide');
+const domA = freshDom();
+const wA = domA.window;
+wA.eval(code);
+wA.WebGuides.activate();
+wA.WebGuides.addVertical(500);
+const shA = wA.document.getElementById('rulersnx-host').shadowRoot;
+function fireA(t, type, p) {
+  const e = new wA.Event(type, { bubbles: true, cancelable: true });
+  Object.assign(e, p || {});
+  t.dispatchEvent(e);
+}
+const gA = shA.querySelector('.wg-guide');
+fireA(gA, 'pointerdown', { clientX: 500, clientY: 300, pointerId: 20, pointerType: 'touch' });
+fireA(wA.document, 'pointermove', { clientX: 640, clientY: 300, pointerType: 'touch' });
+fireA(wA.document, 'pointercancel', { clientX: 640, clientY: 300, pointerType: 'touch' });
+ok('guide survives a cancelled drag', shA.querySelectorAll('.wg-guide').length === 1);
+ok('guide keeps its last position', gA.style.transform === 'translateX(634.5px)');
+fireA(wA.document, 'pointermove', { clientX: 900, clientY: 300, pointerType: 'touch' });
+ok('cancel detached the move listener', gA.style.transform === 'translateX(634.5px)');
+const storeA = JSON.parse(wA.localStorage.getItem('rulersnx:example.com'));
+ok('cancelled drag persisted the last position', storeA.guides[0].p === 640);
+
+console.log('25) a cancelled drag never deletes the guide, even over the ruler');
+wA.WebGuides.addVertical(400);
+const gA2 = Array.from(shA.querySelectorAll('.wg-guide'))
+  .find(el => el.style.transform === 'translateX(394.5px)');
+fireA(gA2, 'pointerdown', { clientX: 400, clientY: 300, pointerId: 21, pointerType: 'touch' });
+fireA(wA.document, 'pointermove', { clientX: 4, clientY: 300, pointerType: 'touch' });
+const countA = shA.querySelectorAll('.wg-guide').length;
+fireA(wA.document, 'pointercancel', { clientX: 4, clientY: 300, pointerType: 'touch' });
+ok('cancel over the ruler does not delete', shA.querySelectorAll('.wg-guide').length === countA);
+
+console.log('26) draggable surfaces opt out of browser panning');
+ok('stylesheet sets touch-action none', /touch-action:\s*none/.test(shA.querySelector('style').textContent));
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

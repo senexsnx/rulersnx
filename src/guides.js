@@ -95,6 +95,8 @@
     return '' +
       ':host{all:initial}' +
       '.wg-layer{position:fixed;inset:0;pointer-events:none;z-index:1}' +
+      // Keep the browser from claiming a drag as a pan gesture on touch.
+      '.wg-ruler,.wg-guide,.wg-shape,.wg-toolbar,.wg-corner{touch-action:none}' +
       '.wg-ruler{position:fixed;background:rgba(24,24,30,.9);pointer-events:auto;z-index:3;box-sizing:border-box}' +
       '.wg-ruler-top{top:0;left:0;right:0;height:' + RULER + 'px;cursor:ns-resize;border-bottom:1px solid rgba(255,255,255,.12)}' +
       '.wg-ruler-left{top:0;left:0;bottom:0;width:' + RULER + 'px;cursor:ew-resize;border-right:1px solid rgba(255,255,255,.12)}' +
@@ -430,13 +432,8 @@
     e.preventDefault(); e.stopPropagation();
     var ox = e.clientX - s.x, oy = e.clientY - s.y;
     function move(ev) { setShapeRect(s, ev.clientX - ox, ev.clientY - oy, s.w, s.h); }
-    function up() {
-      document.removeEventListener('pointermove', move, true);
-      document.removeEventListener('pointerup', up, true);
-      save(); selectItem(s);
-    }
-    document.addEventListener('pointermove', move, true);
-    document.addEventListener('pointerup', up, true);
+    function done() { save(); selectItem(s); }
+    dragLoop(move, done, s.el, e.pointerId);
   }
   function setShapeType(t) { shapeType = t; updateShapeBtns(); save(); }
   function updateShapeBtns() {
@@ -471,17 +468,34 @@
       setShapeRect(s, Math.min(sx, ev.clientX), Math.min(sy, ev.clientY),
         Math.abs(ev.clientX - sx), Math.abs(ev.clientY - sy));
     }
-    function up() {
-      document.removeEventListener('pointermove', move, true);
-      document.removeEventListener('pointerup', up, true);
-      if (s) { save(); selectItem(s); }
-    }
-    document.addEventListener('pointermove', move, true);
-    document.addEventListener('pointerup', up, true);
+    function done() { if (s) { save(); selectItem(s); } }
+    dragLoop(move, done, e.currentTarget, e.pointerId);
   }
 
   // ---------- dragging ----------
-  function beginDrag(orient, g) {
+  // One drag loop for guides, shapes and marker drawing. Survives pointercancel,
+  // which the browser fires when it takes a touch gesture over for panning.
+  // done(ev, cancelled) runs exactly once.
+  function dragLoop(move, done, el, pointerId) {
+    function finish(ev, cancelled) {
+      document.removeEventListener('pointermove', move, true);
+      document.removeEventListener('pointerup', up, true);
+      document.removeEventListener('pointercancel', cancel, true);
+      if (el && pointerId != null && typeof el.releasePointerCapture === 'function') {
+        try { el.releasePointerCapture(pointerId); } catch (e) {}
+      }
+      done(ev, cancelled);
+    }
+    function up(ev) { finish(ev, false); }
+    function cancel(ev) { finish(ev, true); }
+    document.addEventListener('pointermove', move, true);
+    document.addEventListener('pointerup', up, true);
+    document.addEventListener('pointercancel', cancel, true);
+    if (el && pointerId != null && typeof el.setPointerCapture === 'function') {
+      try { el.setPointerCapture(pointerId); } catch (e) {}
+    }
+  }
+  function beginDrag(orient, g, el, pointerId) {
     dragActive = true; // keep rulers visible while pulling/moving a guide
     showLabel(g, true);
     var startC = null, moved = false;
@@ -491,27 +505,27 @@
       if (Math.abs(c - startC) > 3) moved = true;
       setGuidePos(g, c);
     }
-    function up(ev) {
-      document.removeEventListener('pointermove', move, true);
-      document.removeEventListener('pointerup', up, true);
+    function done(ev, cancelled) {
       dragActive = false;
-      var onRuler = orient === 'v' ? ev.clientX < RULER : ev.clientY < RULER;
-      if (onRuler) { removeGuide(g); }
-      else { save(); selectItem(g); } // a click (or finished drag) selects the guide
-      onAutoHide(ev); // collapse the ruler again if the cursor has left the edge
+      // A cancelled drag must never delete: the last valid position stands.
+      var onRuler = !cancelled &&
+        (orient === 'v' ? ev.clientX < RULER : ev.clientY < RULER);
+      if (onRuler) { removeGuide(g); return; }
+      save();
+      selectItem(g); // a click (or finished drag) selects the guide
+      if (!cancelled) onAutoHide(ev); // collapse the ruler if the cursor left the edge
     }
-    document.addEventListener('pointermove', move, true);
-    document.addEventListener('pointerup', up, true);
+    dragLoop(move, done, el, pointerId);
   }
   function startCreate(e, orient) {
     e.preventDefault();
     var g = makeGuide(orient, orient === 'v' ? e.clientX : e.clientY, false);
-    beginDrag(orient, g);
+    beginDrag(orient, g, e.currentTarget, e.pointerId);
   }
   function startMove(e, g) {
     e.preventDefault();
     e.stopPropagation();
-    beginDrag(g.orient, g);
+    beginDrag(g.orient, g, g.wrap, e.pointerId);
   }
 
   // ---------- color ----------
