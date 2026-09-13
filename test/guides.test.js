@@ -310,20 +310,21 @@ function fireA(t, type, p) {
   t.dispatchEvent(e);
 }
 const gA = shA.querySelector('.wg-guide');
+// These events carry pointerType 'touch', so the window is in coarse mode from
+// here on and the grab offset is 44/2 rather than 11/2.
 fireA(gA, 'pointerdown', { clientX: 500, clientY: 300, pointerId: 20, pointerType: 'touch' });
 fireA(wA.document, 'pointermove', { clientX: 640, clientY: 300, pointerType: 'touch' });
 fireA(wA.document, 'pointercancel', { clientX: 640, clientY: 300, pointerType: 'touch' });
 ok('guide survives a cancelled drag', shA.querySelectorAll('.wg-guide').length === 1);
-ok('guide keeps its last position', gA.style.transform === 'translateX(634.5px)');
+ok('guide keeps its last position', gA.style.transform === 'translateX(618px)');
 fireA(wA.document, 'pointermove', { clientX: 900, clientY: 300, pointerType: 'touch' });
-ok('cancel detached the move listener', gA.style.transform === 'translateX(634.5px)');
+ok('cancel detached the move listener', gA.style.transform === 'translateX(618px)');
 const storeA = JSON.parse(wA.localStorage.getItem('rulersnx:example.com'));
 ok('cancelled drag persisted the last position', storeA.guides[0].p === 640);
 
 console.log('25) a cancelled drag never deletes the guide, even over the ruler');
 wA.WebGuides.addVertical(400);
-const gA2 = Array.from(shA.querySelectorAll('.wg-guide'))
-  .find(el => el.style.transform === 'translateX(394.5px)');
+const gA2 = Array.from(shA.querySelectorAll('.wg-guide')).pop(); // newest one
 fireA(gA2, 'pointerdown', { clientX: 400, clientY: 300, pointerId: 21, pointerType: 'touch' });
 fireA(wA.document, 'pointermove', { clientX: 4, clientY: 300, pointerType: 'touch' });
 const countA = shA.querySelectorAll('.wg-guide').length;
@@ -332,6 +333,28 @@ ok('cancel over the ruler does not delete', shA.querySelectorAll('.wg-guide').le
 
 console.log('26) draggable surfaces opt out of browser panning');
 ok('stylesheet sets touch-action none', /touch-action:\s*none/.test(shA.querySelector('style').textContent));
+
+console.log('27) grab zone grows on touch, the visible line does not');
+const domB = freshDom();
+const wB = domB.window;
+wB.eval(code);
+wB.WebGuides.activate();
+wB.WebGuides.addVertical(500);
+const shB = wB.document.getElementById('rulersnx-host').shadowRoot;
+const gB = shB.querySelector('.wg-guide');
+ok('fine mode keeps the 11px offset', gB.style.transform === 'translateX(494.5px)');
+ok('fine mode line is 1px', gB.querySelector('div').style.width === '1px');
+function fireB(t, type, p) {
+  const e = new wB.Event(type, { bubbles: true, cancelable: true });
+  Object.assign(e, p || {});
+  t.dispatchEvent(e);
+}
+fireB(wB, 'pointermove', { clientX: 300, clientY: 300, pointerType: 'touch' });
+ok('coarse mode offsets by 44/2', gB.style.transform === 'translateX(478px)');
+ok('coarse mode leaves the line at 1px', gB.querySelector('div').style.width === '1px');
+ok('stylesheet exposes the hit variable', /--wg-hit/.test(shB.querySelector('style').textContent));
+fireB(wB, 'pointermove', { clientX: 300, clientY: 300, pointerType: 'mouse' });
+ok('back to fine restores the 11px offset', gB.style.transform === 'translateX(494.5px)');
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

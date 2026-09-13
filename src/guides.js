@@ -9,7 +9,8 @@
   if (window.WebGuides) return; // guard against double-injection
 
   var RULER = 22;              // ruler thickness in px
-  var HIT = 11;               // guide grab-strip thickness in px
+  var HIT = 11;               // guide grab-strip thickness in px (mouse)
+  var HIT_COARSE = 44;        // guide grab-strip thickness in px (finger)
   var HIDE_ZONE = 64;         // in 'auto' mode: hide a ruler once the cursor is this far from its edge
   var NS = 'rulersnx:';       // localStorage namespace
   var DEFAULT_COLOR = '#ff00ff';
@@ -52,12 +53,16 @@
     } catch (e) {}
     return (window.navigator && window.navigator.maxTouchPoints || 0) > 0;
   }
+  // Current grab width. The visible line stays 1px either way — only the
+  // invisible strip you can grab gets wider.
+  function hit() { return coarse ? HIT_COARSE : HIT; }
   // CSS carries every visual consequence of the flag; JS only flips it.
   function applyCoarse() {
     if (!host) return;
     if (coarse) host.classList.add('wg-coarse');
     else host.classList.remove('wg-coarse');
     applyRulerVisibility();
+    guides.forEach(renderGuide); // the grab width changed, so the offset did too
     drawRulers();
   }
 
@@ -93,7 +98,20 @@
   // ---------- base stylesheet (for shadow DOM) ----------
   function baseCSS() {
     return '' +
-      ':host{all:initial}' +
+      // --wg-hit drives every grab surface; only this one value changes on touch.
+      ':host{all:initial;--wg-hit:' + HIT + 'px}' +
+      ':host(.wg-coarse){--wg-hit:' + HIT_COARSE + 'px}' +
+      ':host(.wg-coarse) .wg-corner{width:' + HIT_COARSE + 'px;height:' + HIT_COARSE + 'px}' +
+      '.wg-guide{position:fixed;pointer-events:auto;z-index:1}' +
+      '.wg-guide-v{top:0;bottom:0;left:0;width:var(--wg-hit);cursor:ew-resize}' +
+      '.wg-guide-h{left:0;right:0;top:0;height:var(--wg-hit);cursor:ns-resize}' +
+      '.wg-guide>.wg-line{position:absolute}' +
+      '.wg-guide-v>.wg-line{top:0;bottom:0;left:calc(var(--wg-hit) / 2)}' +
+      '.wg-guide-h>.wg-line{left:0;right:0;top:calc(var(--wg-hit) / 2)}' +
+      '.wg-label{position:absolute;color:#fff;font:10px/1.4 "Segoe UI",Arial,sans-serif;' +
+        'padding:1px 4px;border-radius:2px;white-space:nowrap;pointer-events:none}' +
+      '.wg-guide-v>.wg-label{top:' + (RULER + 2) + 'px;left:calc(var(--wg-hit) / 2 + 3px)}' +
+      '.wg-guide-h>.wg-label{left:' + (RULER + 2) + 'px;top:calc(var(--wg-hit) / 2 + 3px)}' +
       '.wg-layer{position:fixed;inset:0;pointer-events:none;z-index:1}' +
       // Keep the browser from claiming a drag as a pan gesture on touch.
       '.wg-ruler,.wg-guide,.wg-shape,.wg-toolbar,.wg-corner{touch-action:none}' +
@@ -301,23 +319,17 @@
 
   // ---------- guides ----------
   function makeGuide(orient, pos, doSave) {
-    var wrap = make(); wrap.className = 'wg-guide';
-    var base = { position: 'fixed', pointerEvents: 'auto', zIndex: '1' };
-    if (orient === 'v') css(wrap, Object.assign(base, { top: '0', bottom: '0', left: '0', width: HIT + 'px', cursor: 'ew-resize' }));
-    else css(wrap, Object.assign(base, { left: '0', right: '0', top: '0', height: HIT + 'px', cursor: 'ns-resize' }));
+    // Geometry lives in the stylesheet so it can follow --wg-hit; only the
+    // colour-dependent bits stay inline.
+    var wrap = make(); wrap.className = 'wg-guide wg-guide-' + orient;
 
-    var line = make();
-    if (orient === 'v') css(line, { position: 'absolute', top: '0', bottom: '0', left: (HIT / 2) + 'px', width: '1px', background: color });
-    else css(line, { position: 'absolute', left: '0', right: '0', top: (HIT / 2) + 'px', height: '1px', background: color });
+    var line = make(); line.className = 'wg-line';
+    if (orient === 'v') css(line, { width: '1px', background: color });
+    else css(line, { height: '1px', background: color });
     wrap.appendChild(line);
 
-    var label = make();
-    css(label, {
-      position: 'absolute', background: color, color: '#fff', font: '10px/1.4 "Segoe UI",Arial,sans-serif',
-      padding: '1px 4px', borderRadius: '2px', whiteSpace: 'nowrap', pointerEvents: 'none', display: 'none'
-    });
-    if (orient === 'v') css(label, { top: (RULER + 2) + 'px', left: (HIT / 2 + 3) + 'px' });
-    else css(label, { left: (RULER + 2) + 'px', top: (HIT / 2 + 3) + 'px' });
+    var label = make(); label.className = 'wg-label';
+    css(label, { background: color, display: 'none' });
     wrap.appendChild(label);
 
     var g = { kind: 'guide', orient: orient, pos: pos, wrap: wrap, line: line, label: label, selected: false };
@@ -340,8 +352,8 @@
     g.wrap.style.display = visible ? '' : 'none';
     if (!visible) return;
     g.wrap.style.transform = g.orient === 'v'
-      ? 'translateX(' + (g.pos - HIT / 2) + 'px)'
-      : 'translateY(' + (g.pos - HIT / 2) + 'px)';
+      ? 'translateX(' + (g.pos - hit() / 2) + 'px)'
+      : 'translateY(' + (g.pos - hit() / 2) + 'px)';
     g.label.textContent = Math.round(g.pos) + ' px';
   }
   // User interaction only: clamp into the viewport, then render.
@@ -354,12 +366,13 @@
 
   // ---------- selection (works for guides and shapes) ----------
   function applyGuideSel(g, on) {
+    // Empty string falls back to the stylesheet, which tracks --wg-hit.
     if (g.orient === 'v') {
       g.line.style.width = on ? '3px' : '1px';
-      g.line.style.left = (on ? HIT / 2 - 1 : HIT / 2) + 'px';
+      g.line.style.left = on ? 'calc(var(--wg-hit) / 2 - 1px)' : '';
     } else {
       g.line.style.height = on ? '3px' : '1px';
-      g.line.style.top = (on ? HIT / 2 - 1 : HIT / 2) + 'px';
+      g.line.style.top = on ? 'calc(var(--wg-hit) / 2 - 1px)' : '';
     }
     g.line.style.boxShadow = on ? '0 0 5px ' + color : 'none';
     showLabel(g, on);
