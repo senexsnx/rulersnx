@@ -411,5 +411,22 @@ wE.WebGuides.activate();
 const shE = wE.document.getElementById('rulersnx-host').shadowRoot;
 ok('missing barOpen defaults to open with a mouse', shE.querySelector('.wg-toolbar').style.display !== 'none');
 
+console.log('31) a DPR change alone triggers a redraw');
+const domF = freshDom();
+const wF = domF.window;
+Object.defineProperty(wF, 'devicePixelRatio', { value: 1, configurable: true });
+boot(wF);
+wF.WebGuides.activate();
+const shF = wF.document.getElementById('rulersnx-host').shadowRoot;
+const cvF = shF.querySelector('.wg-ruler-top canvas');
+const widthAt1 = cvF.width;
+Object.defineProperty(wF, 'devicePixelRatio', { value: 3, configurable: true });
+wF.WebGuides.checkDpr();
+ok('canvas backing store grew with the DPR', cvF.width === widthAt1 * 3);
+ok('css width stayed the same', cvF.style.width === wF.innerWidth + 'px');
+
+console.log('32) visualViewport is optional');
+ok('no visualViewport in jsdom, activate still worked', !!shF.querySelector('.wg-ruler-top'));
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

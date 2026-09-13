@@ -31,6 +31,7 @@
   var coarse = false;         // true while the last pointer seen was a finger
   var revealed = false;       // coarse mode: rulers pulled in via the corner grip
   var barOpen = true;         // toolbar expanded; collapsed to a grip on touch
+  var lastDpr = 0;            // DPR the rulers were last drawn at
 
   // ---------- small helpers ----------
   function css(el, styles) { for (var k in styles) el.style[k] = styles[k]; return el; }
@@ -191,6 +192,16 @@
       toggleRulerReveal();
     });
     window.addEventListener('resize', onResize, true);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncVisualViewport);
+      window.visualViewport.addEventListener('scroll', syncVisualViewport);
+    }
+    if (typeof window.matchMedia === 'function') {
+      try {
+        var mq = window.matchMedia('(resolution: ' + (window.devicePixelRatio || 1) + 'dppx)');
+        if (mq && typeof mq.addEventListener === 'function') mq.addEventListener('change', checkDpr);
+      } catch (e) {}
+    }
     window.addEventListener('pointerdown', onDocPointerDown, true);
     window.addEventListener('pointerdown', onDrawPointerDown, true);
     window.addEventListener('pointermove', onAutoHide, true);
@@ -271,8 +282,28 @@
     var w = window.innerWidth, h = window.innerHeight;
     var ct = sizeCanvas(cvTop, w, RULER), cl = sizeCanvas(cvLeft, RULER, h);
     if (!ct || !cl) return; // no 2d context available (non-browser / headless)
+    lastDpr = window.devicePixelRatio || 1;
     drawScale(ct, 'h', w);
     drawScale(cl, 'v', h);
+  }
+  // The devtools let you change the device pixel ratio without resizing, which
+  // fires no resize event — the canvas would keep its old resolution.
+  function checkDpr() {
+    if (!active) return;
+    if ((window.devicePixelRatio || 1) !== lastDpr) drawRulers();
+  }
+  // Pinch-zooming moves the visual viewport away from the layout viewport, and
+  // position:fixed follows the layout one — the rulers would drift off screen.
+  // Entirely optional: without visualViewport this is a no-op. To switch the
+  // behaviour off, make this function return immediately.
+  function syncVisualViewport() {
+    var vv = window.visualViewport;
+    if (!vv || !host) return;
+    host.style.transformOrigin = '0 0';
+    host.style.transform = 'translate(' + vv.offsetLeft + 'px,' + vv.offsetTop + 'px) ' +
+      'scale(' + (1 / vv.scale) + ')';
+    host.style.width = (vv.width * vv.scale) + 'px';
+    host.style.height = (vv.height * vv.scale) + 'px';
   }
   function drawScale(ctx, orient, len) {
     ctx.clearRect(0, 0, orient === 'h' ? len : RULER, orient === 'h' ? RULER : len);
@@ -566,6 +597,7 @@
   function onResize() {
     if (!active) return;
     drawRulers();
+    syncVisualViewport();
     guides.forEach(renderGuide);
   }
   function activate() {
@@ -600,6 +632,7 @@
     addHorizontal: addHorizontal,
     addCross: addCross,
     clearAll: clearAll,
-    setColor: setColor
+    setColor: setColor,
+    checkDpr: checkDpr
   };
 })();
