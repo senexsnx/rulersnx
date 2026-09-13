@@ -176,6 +176,7 @@ npm test      # 52 assertions, headless
 
 ```
 manifest.json        Manifest V3 (Chromium + Firefox via browser_specific_settings)
+src/toolbar.js       The floating control bar and its collapsed grip
 src/guides.js        The engine — rulers, guides, drag, select, auto-hide, persistence
 src/content.js       Content script: popup/hotkey bridge to the engine
 src/popup.html/.js   Toolbar popup
@@ -195,6 +196,25 @@ test/guides.test.js  Headless jsdom test suite
 - English UI / localization
 - Least-privilege **`activeTab`** mode (drop the broad `<all_urls>` host permission)
 - Signed builds for the Chrome Web Store, Edge Add-ons & AMO
+
+---
+
+## Mobile view in the devtools
+
+RulerSNX detects touch simulation in the responsive design mode on its own and
+adapts as soon as the first finger pointer shows up — no reload needed.
+
+- **Reveal the rulers:** tap the `px` corner at the top left. There is no hover
+  without a mouse, so the corner grip takes over showing and hiding them.
+- **Grabbing guides:** the invisible grab strip grows from 11px to 44px while
+  the visible line stays 1px thin.
+- **Toolbar:** collapses to a grip in the bottom right on touch and expands
+  again when you switch back to a mouse.
+- **Changing viewport width:** guides keep their absolute position. Anything
+  outside the current width is hidden and comes back unchanged when you switch
+  back.
+
+With a mouse everything behaves exactly as it did in 1.0.0.
 
 ---
 
