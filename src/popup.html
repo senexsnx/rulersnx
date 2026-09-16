@@ -26,6 +26,10 @@
     .colorrow label { font-size: 12px; color: #cfcfda; }
     input[type=color] { width: 30px; height: 26px; padding: 0; border: 1px solid rgba(255,255,255,.25); border-radius: 5px; background: none; cursor: pointer; }
     .kbd { font-size: 10px; color: #7f7f8c; margin-top: 10px; text-align: center; }
+    .note:empty { display: none; }
+    .note { font-size: 11px; line-height: 1.35; color: #ffd0a0; background: rgba(255,160,64,.10);
+            border: 1px solid rgba(255,160,64,.30); border-radius: 6px; padding: 7px 8px; margin: 8px 0 0; }
+    body.blocked button, body.blocked input[type=color] { opacity: .45; pointer-events: none; }
     .kbd b { color: #b9b9c6; }
   </style>
 </head>
@@ -48,8 +52,11 @@
 
   <button id="clear">Alle löschen</button>
 
+  <p class="note" id="note"></p>
+
   <p class="kbd">Aus dem Lineal ziehen · Linie anklicken + <b>Entf</b> löscht ·<br><b>Alt&nbsp;+&nbsp;G</b> zum Ein-/Ausschalten</p>
 
+  <script src="exec.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

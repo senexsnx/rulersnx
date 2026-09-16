@@ -5,3 +5,6 @@ node_modules/
 .DS_Store
 Thumbs.db
 web-ext-artifacts/
+chrome-artifacts/
+dist/
+verification.log

@@ -455,5 +455,61 @@ wG.WebGuides.activate();
 ok('fallback used when matchMedia is missing',
   wG.document.getElementById('rulersnx-host').classList.contains('wg-coarse') === true);
 
+console.log('35) inside the extension the state stays out of the visited page');
+// A stand-in for browser.storage.local. Its thenable settles synchronously so
+// these cases stay in step with the rest of the suite; the engine only ever
+// calls .then(ok, err) on what get()/set() return.
+function thenable(v) { return { then: function (ok) { ok(v); return thenable(undefined); } }; }
+function withExtStorage(seedPage, seedExt) {
+  const d = freshDom();
+  const w = d.window;
+  const mem = Object.assign({}, seedExt || {});
+  // Must exist before boot(): the engine picks its backend at load time.
+  w.browser = { storage: { local: {
+    get: key => thenable(key in mem ? { [key]: mem[key] } : {}),
+    set: obj => { Object.assign(mem, obj); return thenable(undefined); }
+  } } };
+  if (seedPage) w.localStorage.setItem('rulersnx:example.com', JSON.stringify(seedPage));
+  boot(w);
+  w.WebGuides.activate();
+  return { w, mem, shadow: () => w.document.getElementById('rulersnx-host').shadowRoot };
+}
+const extA = withExtStorage(null, null);
+extA.w.WebGuides.addVertical(300);
+const savedA = extA.mem['rulersnx:example.com'];
+ok('state written to storage.local', !!savedA);
+ok('guide landed in storage.local', !!savedA && savedA.guides.length === 1 && savedA.guides[0].p === 300);
+ok('page localStorage left untouched', extA.w.localStorage.getItem('rulersnx:example.com') === null);
+
+console.log('36) a 1.1.0 payload is lifted out of the visited site');
+const extB = withExtStorage({ color: '#ff0000', guides: [{ o: 'v', p: 111 }], shapes: [] }, null);
+ok('legacy guide restored', extB.shadow().querySelectorAll('.wg-guide').length === 1);
+ok('legacy key deleted from the page', extB.w.localStorage.getItem('rulersnx:example.com') === null);
+ok('legacy payload adopted into storage.local', !!extB.mem['rulersnx:example.com']);
+ok('adopted payload kept the colour', extB.mem['rulersnx:example.com'].color === '#ff0000');
+
+console.log('37) storage.local wins over a stale legacy key, which is cleaned up anyway');
+const extC = withExtStorage(
+  { color: '#ff0000', guides: [{ o: 'v', p: 111 }, { o: 'v', p: 222 }], shapes: [] },
+  { 'rulersnx:example.com': { color: '#00ff00', rulerMode: 'auto', shapeType: 'rect', guides: [{ o: 'h', p: 150 }], shapes: [] } }
+);
+ok('extension state used, not the legacy one', extC.shadow().querySelectorAll('.wg-guide').length === 1);
+ok('stale legacy key removed too', extC.w.localStorage.getItem('rulersnx:example.com') === null);
+ok('extension state not overwritten', extC.mem['rulersnx:example.com'].color === '#00ff00');
+
+console.log('38) a throwing storage backend never falls through to the page');
+const domH = freshDom();
+const wH = domH.window;
+wH.browser = { storage: { local: {
+  get: () => { throw new Error('storage unavailable'); },
+  set: () => { throw new Error('storage unavailable'); }
+} } };
+boot(wH);
+wH.WebGuides.activate();
+wH.WebGuides.addVertical(300);
+ok('activate survived a throwing backend', !!wH.document.getElementById('rulersnx-host'));
+ok('guide still drawn', wH.document.getElementById('rulersnx-host').shadowRoot.querySelectorAll('.wg-guide').length === 1);
+ok('nothing leaked into the page', wH.localStorage.getItem('rulersnx:example.com') === null);
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

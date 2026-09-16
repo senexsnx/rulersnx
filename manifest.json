@@ -1,11 +1,36 @@
 {
   "manifest_version": 3,
   "name": "RulerSNX — Ruler & Guides",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Illustrator-style ruler and draggable magenta guide lines over any website. Check optical axes, alignment and spacing. Rulers auto-hide so they never cover your content.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
   "action": {
     "default_popup": "src/popup.html",
-    "default_title": "RulerSNX"
+    "default_title": "RulerSNX",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "scripts": [
+      "src/exec.js",
+      "src/background.js"
+    ]
+  },
+  "commands": {
+    "toggle-overlay": {
+      "suggested_key": {
+        "default": "Alt+G"
+      },
+      "description": "RulerSNX ein- oder ausblenden"
+    }
   },
   "icons": {
     "16": "icons/icon16.png",
@@ -13,18 +38,18 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["src/toolbar.js", "src/guides.js", "src/content.js"],
-      "run_at": "document_idle",
-      "all_frames": false
-    }
-  ],
   "browser_specific_settings": {
     "gecko": {
       "id": "rulersnx@senex",
-      "strict_min_version": "109.0"
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
     }
   }
 }

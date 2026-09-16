@@ -19,6 +19,8 @@
   var elTop, elLeft, elCorner, elLayer, elToolbar, cvTop, cvLeft;
   var tb = null;              // handle returned by RulerSNXToolbar.build
   var active = false;
+  var restoring = false;
+  var pendingChanges = [];
   var rulerMode = 'auto';     // 'auto' (reveal near edge) | 'on' (always) | 'off'
   var topShown = false, leftShown = false;
   var dragActive = false;
@@ -80,34 +82,92 @@
   }
 
   // ---------- persistence (per hostname) ----------
+  // Inside the extension the state lives in browser.storage.local. Up to 1.1.0 it
+  // was written into the visited site's own localStorage, which left a key behind
+  // on every site you measured and let any of those sites read it and tell that
+  // you run RulerSNX. Loaded straight into a page (demo/, the test suite) there is
+  // no extension API and localStorage stays the backend.
   function storeKey() { return NS + location.hostname; }
-  function save() {
+
+  var extStore = (function () {
     try {
-      localStorage.setItem(storeKey(), JSON.stringify({
-        color: color,
-        rulerMode: rulerMode,
-        shapeType: shapeType,
-        barOpen: barOpen,
-        guides: guides.map(function (g) { return { o: g.orient, p: Math.round(g.pos) }; }),
-        shapes: shapes.map(function (s) {
-          return { t: s.type, x: Math.round(s.x), y: Math.round(s.y), w: Math.round(s.w), h: Math.round(s.h) };
-        })
-      }));
-    } catch (e) {}
+      var a = (typeof browser !== 'undefined' && browser) ||
+              (typeof chrome !== 'undefined' && chrome) || null;
+      return (a && a.storage && a.storage.local) ? a.storage.local : null;
+    } catch (e) { return null; }
+  })();
+
+  function snapshot() {
+    return {
+      color: color,
+      rulerMode: rulerMode,
+      shapeType: shapeType,
+      barOpen: barOpen,
+      guides: guides.map(function (g) { return { o: g.orient, p: Math.round(g.pos) }; }),
+      shapes: shapes.map(function (s) {
+        return { t: s.type, x: Math.round(s.x), y: Math.round(s.y), w: Math.round(s.w), h: Math.round(s.h) };
+      })
+    };
   }
-  function restore() {
-    try {
-      var raw = localStorage.getItem(storeKey());
-      if (!raw) return;
-      var d = JSON.parse(raw);
-      if (d.color) color = d.color;
-      if (d.rulerMode) rulerMode = d.rulerMode;
-      else if (typeof d.showRulers === 'boolean') rulerMode = d.showRulers ? 'on' : 'off'; // migrate old setting
-      if (d.shapeType) shapeType = d.shapeType;
-      if (typeof d.barOpen === 'boolean') barOpen = d.barOpen;
-      (d.guides || []).forEach(function (g) { makeGuide(g.o, g.p, false); });
-      (d.shapes || []).forEach(function (s) { makeShape(s.t, s.x, s.y, s.w, s.h, false); });
-    } catch (e) {}
+  function readLocal(key) {
+    try { var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+  }
+  // Answering twice is harmless, which lets the reader offer both API flavours.
+  function once(fn) { var done = false; return function (v) { if (done) return; done = true; fn(v); }; }
+  // storage.local is promise-based in Firefox and in MV3 Chrome; the callback
+  // form is only there for older engines.
+  function readState(cb) {
+    var key = storeKey(), hit = once(cb);
+    if (!extStore) { hit(readLocal(key)); return; }
+    var r = null;
+    try { r = extStore.get(key); } catch (e) { r = null; }
+    if (r && typeof r.then === 'function') {
+      r.then(function (res) { hit(res && res[key]); }, function () { hit(null); });
+      return;
+    }
+    try { extStore.get(key, function (res) { hit(res && res[key]); }); } catch (e) { hit(null); }
+  }
+  function save() {
+    var key = storeKey(), data = snapshot();
+    if (extStore) {
+      try {
+        var o = {}; o[key] = data;
+        var r = extStore.set(o);
+        if (r && typeof r.catch === 'function') r.catch(function () {});
+      } catch (e) {}
+      return; // a failed write never falls back into the page's storage
+    }
+    try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
+  }
+  // Lift a 1.1.0 payload out of the visited site. Runs in extension mode only,
+  // where localStorage is no longer ours, and always clears the old key — also
+  // when storage.local already has newer state and the payload is discarded.
+  function takeLegacy() {
+    var key = storeKey(), d = readLocal(key);
+    if (d) { try { localStorage.removeItem(key); } catch (e) {} }
+    return d;
+  }
+  function applyState(d) {
+    if (!d) return;
+    if (d.color) color = d.color;
+    if (d.rulerMode) rulerMode = d.rulerMode;
+    else if (typeof d.showRulers === 'boolean') rulerMode = d.showRulers ? 'on' : 'off'; // migrate old setting
+    if (d.shapeType) shapeType = d.shapeType;
+    if (typeof d.barOpen === 'boolean') barOpen = d.barOpen;
+    (d.guides || []).forEach(function (g) { makeGuide(g.o, g.p, false); });
+    (d.shapes || []).forEach(function (s) { makeShape(s.t, s.x, s.y, s.w, s.h, false); });
+  }
+  // Callback based: it runs synchronously on localStorage and a tick later on
+  // storage.local, so activate() cannot assume the state has landed.
+  function restore(done) {
+    readState(function (d) {
+      var legacy = extStore ? takeLegacy() : null;
+      var adopted = !d && !!legacy;
+      if (adopted) d = legacy;
+      try { applyState(d); } catch (e) {}
+      if (adopted) save(); // the payload now lives in the extension
+      if (done) done();
+    });
   }
 
   // ---------- base stylesheet (for shadow DOM) ----------
@@ -446,8 +506,11 @@
     save();
   }
   function clearAll() {
-    guides.slice().forEach(removeGuide);
-    shapes.slice().forEach(removeShape);
+    afterRestore(function () {
+      guides.slice().forEach(removeGuide);
+      shapes.slice().forEach(removeShape);
+      save();
+    });
   }
 
   // ---------- shapes (region markers to highlight a spot) ----------
@@ -596,7 +659,9 @@
     });
     if (tb) tb.setColorValue(color);
   }
-  function setColor(c) { color = c; applyColor(); save(); }
+  function setColor(c) {
+    afterRestore(function () { color = c; applyColor(); save(); });
+  }
 
   // ---------- lifecycle ----------
   function onResize() {
@@ -605,9 +670,33 @@
     syncVisualViewport();
     guides.forEach(renderGuide);
   }
+  function initialize() {
+    if (host) return;
+    restoring = true;
+    build();
+    // Do not expose interactive controls until the saved state is available.
+    host.style.display = 'none';
+    restore(function () {
+      restoring = false;
+      var changes = pendingChanges;
+      pendingChanges = [];
+      changes.forEach(function (change) { change(); });
+      applyLoaded();
+    });
+  }
+  function afterRestore(change) {
+    initialize();
+    if (restoring) pendingChanges.push(change);
+    else change();
+  }
   function activate() {
-    if (!host) { build(); restore(); }
     active = true;
+    initialize();
+    if (!restoring) applyLoaded();
+  }
+  // Everything that has to re-run once the stored state is in.
+  function applyLoaded() {
+    if (!active || !host) return;
     host.style.display = '';
     applyColor();
     updateRulerBtn();
@@ -624,8 +713,14 @@
   function toggle() { if (active) deactivate(); else activate(); }
 
   // ---------- public API ----------
-  function addVertical(x) { if (!active) activate(); makeGuide('v', typeof x === 'number' ? x : window.innerWidth / 2); }
-  function addHorizontal(y) { if (!active) activate(); makeGuide('h', typeof y === 'number' ? y : window.innerHeight / 2); }
+  function addVertical(x) {
+    if (!active) activate();
+    afterRestore(function () { makeGuide('v', typeof x === 'number' ? x : window.innerWidth / 2); });
+  }
+  function addHorizontal(y) {
+    if (!active) activate();
+    afterRestore(function () { makeGuide('h', typeof y === 'number' ? y : window.innerHeight / 2); });
+  }
   function addCross() { addVertical(); addHorizontal(); }
 
   window.WebGuides = {
