@@ -57,6 +57,22 @@ the next column:
 
 ---
 
+## Related project: CalendarSNX
+
+CalendarSNX is the companion Adobe InDesign JSX script from SNX Solutions. It creates
+photo calendars with reusable layouts, themes, holidays and presets. The current script
+and its full documentation live in the separate [CalendarSNX repository](https://github.com/senexsnx/CalendarSNX).
+
+The latest InDesign examples are included here as a reference for the wider SNX toolset:
+
+![CalendarSNX script dialog](docs/calendarSNX/01-script-dialog.png)
+
+![CalendarSNX year overview](docs/calendarSNX/07-year-overview.png)
+
+More CalendarSNX screenshots are available in [`docs/calendarSNX`](docs/calendarSNX/).
+
+---
+
 ## Features
 
 - Rulers along the top and left edge with a live px scale.
