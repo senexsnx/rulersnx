@@ -47,7 +47,7 @@ async function main() {
     const t = harness([{ error: 'Missing host permission for the tab' }]);
     await tick();
     const note = t.doc.getElementById('note').textContent;
-    ok('note names the page, not the exception', /Auf dieser Seite nicht möglich/.test(note));
+    ok('note names the page, not the exception', /Not available on this page/.test(note));
     ok('body marked blocked', t.doc.body.classList.contains('blocked'));
   }
 
@@ -59,7 +59,7 @@ async function main() {
     t.doc.getElementById('toggle').dispatchEvent(new t.win.Event('click'));
     await tick();
     ok('the click still reached exec', t.calls.length === 2 && t.calls[1].cmd === 'toggle');
-    ok('and the popup recovered', t.doc.getElementById('toggle').textContent === 'Deaktivieren');
+    ok('and the popup recovered', t.doc.getElementById('toggle').textContent === 'Deactivate');
     ok('blocked cleared', !t.doc.body.classList.contains('blocked'));
   }
 
@@ -94,7 +94,7 @@ async function main() {
   {
     const t = harness([null]);
     await tick();
-    ok('own message', /Kein Tab gefunden/.test(t.doc.getElementById('note').textContent));
+    ok('own message', /No tab was found/.test(t.doc.getElementById('note').textContent));
   }
 
   console.log('6) a rejected promise still reaches the note');
@@ -113,7 +113,8 @@ async function main() {
     const t = harness([{ active: false, ready: false }]);
     await tick();
     ok('no note', t.doc.getElementById('note').textContent === '');
-    ok('button offers to activate', t.doc.getElementById('toggle').textContent === 'Aktivieren');
+    ok('fresh popup defaults to English', t.doc.getElementById('toggle').textContent === 'Activate');
+    ok('fresh popup selects English', t.doc.getElementById('language').value === 'en');
   }
 
   console.log('9) language selector switches popup copy and sends the command');
@@ -140,7 +141,7 @@ async function main() {
     ok('the opening probe stays quiet', t.doc.getElementById('note').textContent === '');
     t.doc.getElementById('toggle').dispatchEvent(new t.win.Event('click'));
     await tick();
-    ok('but a real command reports it', /Engine ist nicht in der Seite/.test(t.doc.getElementById('note').textContent));
+    ok('but a real command reports it', /engine did not reach the page/.test(t.doc.getElementById('note').textContent));
   }
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');

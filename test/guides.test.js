@@ -41,7 +41,10 @@ ok('left ruler present', !!shadow().querySelector('.wg-ruler-left'));
 ok('toolbar present', !!shadow().querySelector('.wg-toolbar'));
 ok('active state', W.isActive() === true);
 const initialToolbar = shadow().querySelector('.wg-toolbar');
-ok('toolbar starts in German', initialToolbar.textContent.includes('+ Vertikal'));
+ok('toolbar starts in English', initialToolbar.textContent.includes('+ Vertical'));
+const toolbarStyle = shadow().querySelector('style').textContent;
+ok('toolbar stays on one row', /flex-wrap:nowrap/.test(toolbarStyle));
+ok('toolbar uses the wider layout', /width:calc\(100vw - 24px\)/.test(toolbarStyle));
 W.setLanguage('en');
 ok('toolbar switches to English', initialToolbar.textContent.includes('+ Vertical'));
 ok('English tooltip switches too', initialToolbar.querySelector('.wg-btn').title.includes('vertical'));
@@ -149,15 +152,15 @@ ok('top ruler hides when cursor leaves edge', top3.style.display === 'none');
 fire3(w3, 'pointermove', { clientX: 4, clientY: 300 });
 ok('left ruler reveals near left edge', left3.style.display !== 'none');
 
-console.log('13) "Lineale" button cycles Auto -> An -> Aus');
-const rbtn = Array.from(sh3.querySelectorAll('.wg-btn')).find(b => /Lineale/.test(b.textContent));
+console.log('13) "Rulers" button cycles Auto -> On -> Off');
+const rbtn = Array.from(sh3.querySelectorAll('.wg-btn')).find(b => /Rulers/.test(b.textContent));
 ok('button label starts at Auto', /Auto/.test(rbtn.textContent));
 fire3(rbtn, 'click', {});
-ok('-> An: always visible', top3.style.display !== 'none' && /An/.test(rbtn.textContent));
-fire3(w3, 'pointermove', { clientX: 300, clientY: 300 }); // in "An" mode a far cursor must NOT hide it
-ok('An mode ignores auto-hide', top3.style.display !== 'none');
+ok('-> On: always visible', top3.style.display !== 'none' && /On/.test(rbtn.textContent));
+fire3(w3, 'pointermove', { clientX: 300, clientY: 300 }); // in "On" mode a far cursor must NOT hide it
+ok('On mode ignores auto-hide', top3.style.display !== 'none');
 fire3(rbtn, 'click', {});
-ok('-> Aus: hidden', top3.style.display === 'none' && /Aus/.test(rbtn.textContent));
+ok('-> Off: hidden', top3.style.display === 'none' && /Off/.test(rbtn.textContent));
 
 console.log('14) Shift+drag draws a rectangle marker, auto-selected, Entf removes it (dom1)');
 const body = win.document.body;

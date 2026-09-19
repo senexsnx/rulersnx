@@ -77,7 +77,8 @@
   };
 
   function normalize(locale) {
-    return String(locale || '').toLowerCase().indexOf('en') === 0 ? 'en' : 'de';
+    var value = locale == null || locale === '' ? 'en' : String(locale).toLowerCase();
+    return value.indexOf('en') === 0 ? 'en' : 'de';
   }
 
   function get(locale, key) {

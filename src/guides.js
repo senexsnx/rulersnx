@@ -24,7 +24,7 @@
   var restoring = false;
   var pendingChanges = [];
   var rulerMode = 'auto';     // 'auto' (reveal near edge) | 'on' (always) | 'off'
-  var language = 'de';         // toolbar locale; German preserves existing behavior
+  var language = 'en';         // toolbar locale; English is the fresh-install default
   var topShown = false, leftShown = false;
   var dragActive = false;
   var color = DEFAULT_COLOR;
@@ -215,7 +215,7 @@
       '.wg-corner{position:fixed;top:0;left:0;width:' + RULER + 'px;height:' + RULER + 'px;background:#26262f;pointer-events:auto;' +
         'z-index:4;display:flex;align-items:center;justify-content:center;font:9px "Segoe UI",system-ui,Arial,sans-serif;color:#8a8a97}' +
       '.wg-toolbar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:4px;align-items:center;' +
-        'flex-wrap:wrap;justify-content:center;max-width:96vw;' +
+        'flex-wrap:nowrap;justify-content:center;width:calc(100vw - 24px);max-width:1200px;box-sizing:border-box;' +
         'padding:5px 6px;border-radius:9px;background:rgba(24,24,30,.94);box-shadow:0 4px 18px rgba(0,0,0,.35);' +
         'pointer-events:auto;z-index:5;font:12px/1 "Segoe UI",system-ui,Arial,sans-serif;color:#eee}' +
       '.wg-btn{display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:6px;cursor:pointer;' +
@@ -233,7 +233,8 @@
       // Finger-sized controls once the bar is expanded on touch.
       ':host(.wg-coarse) .wg-btn{min-height:' + HIT_COARSE + 'px;padding:5px 12px}' +
       ':host(.wg-coarse) .wg-color{width:' + HIT_COARSE + 'px;height:' + HIT_COARSE + 'px}' +
-      ':host(.wg-coarse) .wg-title{display:none}';
+      ':host(.wg-coarse) .wg-title{display:none}' +
+      '@media (max-width:700px){.wg-toolbar{gap:2px;padding:4px}.wg-btn{gap:3px;padding:4px 6px;font-size:11px}.wg-sep{margin:0 1px}.wg-title{padding:0 3px 0 1px}.wg-color{width:20px;height:20px}}';
   }
 
   // ---------- build overlay ----------
@@ -609,7 +610,7 @@
   function updateShapeBtns() { if (tb) tb.updateShapeBtns(); }
   function toggleDraw() { drawArmed = !drawArmed; updateShapeBtns(); }
   function setLanguage(locale) {
-    language = globalThis.RulerSNXI18n ? globalThis.RulerSNXI18n.normalize(locale) : 'de';
+    language = globalThis.RulerSNXI18n ? globalThis.RulerSNXI18n.normalize(locale) : 'en';
     if (tb) tb.setLanguage(language);
     save();
   }

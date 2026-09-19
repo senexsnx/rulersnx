@@ -6,7 +6,7 @@
   var toggleBtn = document.getElementById('toggle');
   var note = document.getElementById('note');
   var languageSelect = document.getElementById('language');
-  var language = 'de';
+  var language = 'en';
   var LANGUAGE_KEY = 'rulersnx:language';
 
   function storageApi() {

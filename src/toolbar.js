@@ -20,7 +20,7 @@
 
   function build(ctx) {
     var i18n = globalThis.RulerSNXI18n;
-    var language = i18n.normalize(ctx.getLanguage ? ctx.getLanguage() : 'de');
+    var language = i18n.normalize(ctx.getLanguage ? ctx.getLanguage() : 'en');
     var localized = [];
     var bar = make(); bar.className = 'wg-toolbar';
     var title = make(); title.className = 'wg-title'; title.textContent = 'RulerSNX';

@@ -11,5 +11,6 @@ if (i18n.get('en', 'activate') !== 'Activate') throw new Error('English activati
 if (i18n.get('de', 'activate') !== 'Aktivieren') throw new Error('German activation label missing');
 if (i18n.get('xx', 'activate') !== 'Aktivieren') throw new Error('Unknown locales must fall back to German');
 if (i18n.normalize('en-US') !== 'en') throw new Error('English locale normalization failed');
+if (i18n.normalize(null) !== 'en' || i18n.normalize('') !== 'en') throw new Error('Missing locale must default to English');
 
 console.log('i18n dictionary works');
