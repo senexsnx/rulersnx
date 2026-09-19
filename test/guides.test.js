@@ -4,10 +4,11 @@ const { JSDOM } = require('jsdom');
 
 const code = fs.readFileSync(path.join(__dirname, '..', 'src', 'guides.js'), 'utf8');
 const toolbarCode = fs.readFileSync(path.join(__dirname, '..', 'src', 'toolbar.js'), 'utf8');
+const i18nCode = fs.readFileSync(path.join(__dirname, '..', 'src', 'i18n.js'), 'utf8');
 
 // Same order the manifest uses: the toolbar module must exist before the engine
 // builds its overlay.
-function boot(w) { w.eval(toolbarCode); w.eval(code); return w.WebGuides; }
+function boot(w) { w.eval(i18nCode); w.eval(toolbarCode); w.eval(code); return w.WebGuides; }
 
 const dom = new JSDOM('<!DOCTYPE html><html><body><h1>t</h1></body></html>', {
   url: 'https://example.com/',
@@ -39,6 +40,13 @@ ok('top ruler present', !!shadow().querySelector('.wg-ruler-top'));
 ok('left ruler present', !!shadow().querySelector('.wg-ruler-left'));
 ok('toolbar present', !!shadow().querySelector('.wg-toolbar'));
 ok('active state', W.isActive() === true);
+const initialToolbar = shadow().querySelector('.wg-toolbar');
+ok('toolbar starts in German', initialToolbar.textContent.includes('+ Vertikal'));
+W.setLanguage('en');
+ok('toolbar switches to English', initialToolbar.textContent.includes('+ Vertical'));
+ok('English tooltip switches too', initialToolbar.querySelector('.wg-btn').title.includes('vertical'));
+ok('language is persisted', JSON.parse(win.localStorage.getItem('rulersnx:example.com')).language === 'en');
+W.setLanguage('de');
 
 console.log('2) add vertical @300, horizontal @200');
 W.addVertical(300);

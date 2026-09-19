@@ -18,7 +18,7 @@
   // the add-on root, and the popup at /src/popup.html. Written as 'src/…' the
   // popup asked for /src/src/toolbar.js, which does not exist — so the keyboard
   // shortcut worked while every popup button did nothing at all.
-  var ENGINE = ['/src/toolbar.js', '/src/guides.js'];
+  var ENGINE = ['/src/i18n.js', '/src/toolbar.js', '/src/guides.js'];
 
   // Serialized and executed in the tab's isolated world — it must not close over
   // anything in this file.
@@ -29,6 +29,9 @@
     // sandbox global is simply the one that says what it means.
     var W = globalThis.WebGuides;
     if (!W) return { active: false, ready: false };
+    if (value && (value === 'de' || value === 'en') && cmd !== 'color' && W.setLanguage) {
+      W.setLanguage(value);
+    }
     switch (cmd) {
       case 'toggle': W.toggle(); break;
       case 'activate': W.activate(); break;
@@ -38,6 +41,7 @@
       case 'horizontal': W.addHorizontal(); break;
       case 'cross': W.addCross(); break;
       case 'color': if (value) W.setColor(value); break;
+      case 'language': W.setLanguage(value); break;
       case 'state': break; // read-only probe
     }
     return { active: W.isActive(), ready: true };

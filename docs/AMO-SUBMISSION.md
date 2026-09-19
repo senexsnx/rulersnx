@@ -9,7 +9,7 @@ Everything a submission needs, in the order AMO asks for it. The short version:
 
 ```bash
 npm install
-npm run verify   # 195 assertions + addons-linter; errors 0, with one expected Android compatibility warning
+npm run verify   # 207 assertions + addons-linter; errors 0, with one expected Android compatibility warning
 npm run build    # web-ext-artifacts/rulersnx_ruler_guides-<version>.zip
 ```
 
@@ -20,6 +20,7 @@ Then walk the add-on once by hand, because the linter cannot:
       select it, delete it with `Entf`
 - [ ] `Shift` + drag draws a marker; `Markieren` arms plain dragging
 - [ ] Activate and deactivate through the popup; Alt+G is currently unavailable in Firefox
+- [ ] In the popup, switch between `Deutsch` and `English`; reopen it and confirm the choice persists
 - [ ] On a tall page: place a horizontal guide on an element, scroll — the guide stays on
       that element and the left ruler keeps counting (1400, not back to 0)
 - [ ] Reload the page, switch the overlay on again — the guides are back
@@ -85,7 +86,7 @@ Tests, docs and the demo are excluded through `web-ext-config.cjs`.
 > permanent permission to access all websites. Guides and settings are saved locally,
 > grouped by website hostname.
 >
-> The interface is in German. Full source: MIT licensed.
+> The interface supports German and English; German is the default. Full source: MIT licensed.
 
 **Categories:** Web Development (primary), Appearance
 **Tags:** ruler, guides, layout, alignment, web design, developer tools
@@ -163,6 +164,12 @@ anyway if you want the field filled.
 ---
 
 ## 7. Version notes
+
+### 1.4.0
+
+> - Added a persistent Deutsch/English selector in the popup.
+> - Toolbar labels, tooltips, popup controls, and status messages now follow the selected language.
+> - German remains the default so existing installations keep their current interface.
 
 ### 1.3.0
 

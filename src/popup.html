@@ -37,27 +37,36 @@
 </head>
 <body>
   <h1>RulerSNX</h1>
-  <p class="hint">Lineal &amp; magenta Hilfslinien über jede Website legen.</p>
+  <p class="hint" data-i18n="hint">Lineal &amp; magenta Hilfslinien über jede Website legen.</p>
 
-  <button id="toggle" class="primary">Aktivieren</button>
+  <button id="toggle" class="primary" data-i18n="activate">Aktivieren</button>
 
   <div class="row">
-    <button id="v">+ Vertikal</button>
-    <button id="h">+ Horizontal</button>
+    <button id="v" data-i18n="vertical">+ Vertikal</button>
+    <button id="h" data-i18n="horizontal">+ Horizontal</button>
   </div>
-  <button id="cross">+ Fadenkreuz (Mitte)</button>
+  <button id="cross" data-i18n="cross">+ Fadenkreuz (Mitte)</button>
 
   <div class="colorrow">
-    <label for="color">Farbe</label>
+    <label for="color" data-i18n="color">Farbe</label>
     <input type="color" id="color" value="#ff00ff">
   </div>
 
-  <button id="clear">Alle löschen</button>
+  <button id="clear" data-i18n="clear">Alle löschen</button>
+
+  <div class="colorrow">
+    <label for="language" data-i18n="language">Sprache</label>
+    <select id="language" aria-label="Sprache">
+      <option value="de" data-i18n="languageDe">Deutsch</option>
+      <option value="en" data-i18n="languageEn">English</option>
+    </select>
+  </div>
 
   <p class="note" id="note"></p>
 
-  <p class="kbd">Aus dem Lineal ziehen · Linie anklicken + <b>Entf</b> löscht ·<br><b>Alt&nbsp;+&nbsp;G</b> zum Ein-/Ausschalten</p>
+  <p class="kbd" data-i18n="kbd">Aus dem Lineal ziehen · Linie anklicken + <b>Entf</b> löscht ·<br><b>Alt&nbsp;+&nbsp;G</b> zum Ein-/Ausschalten</p>
 
+  <script src="i18n.js"></script>
   <script src="exec.js"></script>
   <script src="popup.js"></script>
 </body>

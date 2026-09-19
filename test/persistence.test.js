@@ -17,7 +17,7 @@ function harness() {
     get: () => new Promise(resolve => { resolveRead = resolve; }),
     set: value => { saved = structuredClone(value[key]); return Promise.resolve(); }
   } } };
-  for (const file of ['toolbar.js', 'guides.js']) {
+  for (const file of ['i18n.js', 'toolbar.js', 'guides.js']) {
     w.eval(fs.readFileSync(path.join(__dirname, '..', 'src', file), 'utf8'));
   }
   return {

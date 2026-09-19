@@ -1,6 +1,6 @@
 # Chrome / Chromium submission status — 2026-09-19
 
-The Chromium build is current at version 1.3.1 and is ready for both the Chrome Web
+The Chromium build is current at version 1.4.0 and is ready for both the Chrome Web
 Store and Microsoft Edge Add-ons. The store submissions remain paused while the
 publisher verification details are unresolved.
 
@@ -16,7 +16,7 @@ publisher verification details are unresolved.
 ## Prepared build
 
 - Run `npm run build:chrome`.
-- Upload archive: `chrome-artifacts/rulersnx-chrome-1.3.1.zip`.
+- Upload archive: `chrome-artifacts/rulersnx-chrome-1.4.0.zip`.
 - SHA-256: `6B78EFA89C48AD20B1A79020377D68219CE6611B07E234FB69455DEE34184B68`.
 - Unpacked output: `dist/chrome`.
 - Chrome MV3 classic service worker imports the shared execution helper and keyboard

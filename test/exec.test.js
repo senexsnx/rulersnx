@@ -56,6 +56,7 @@ function engine(win, active) {
     addHorizontal() { this.h = (this.h || 0) + 1; },
     addCross() { this.addVertical(); this.addHorizontal(); },
     setColor(c) { this.color = c; },
+    setLanguage(locale) { this.language = locale; },
     isActive() { return this._active; }
   };
   return win.WebGuides;
@@ -69,7 +70,7 @@ async function main() {
     const state = await t.exec.run('toggle');
     ok('two executeScript calls (files, then func)', t.calls.length === 2);
     ok('engine files injected in order',
-      JSON.stringify(t.calls[0].files) === JSON.stringify(['/src/toolbar.js', '/src/guides.js']));
+      JSON.stringify(t.calls[0].files) === JSON.stringify(['/src/i18n.js', '/src/toolbar.js', '/src/guides.js']));
     ok('targets the resolved tab', t.calls[0].target.tabId === 7);
     ok('toggle reached the engine', W.isActive() === true);
     ok('state reported back', state && state.active === true && state.ready === true);
@@ -116,10 +117,12 @@ async function main() {
     await t.exec.run('horizontal');
     await t.exec.run('cross');
     await t.exec.run('color', '#00ffcc');
+    await t.exec.run('language', 'en');
     await t.exec.run('clear');
     ok('vertical guides requested', W.v === 2);   // one direct, one via cross
     ok('horizontal guides requested', W.h === 2);
     ok('colour passed through', W.color === '#00ffcc');
+    ok('language passed through', W.language === 'en');
     ok('clear reached the engine', W.cleared === true);
     await t.exec.run('color', null);
     ok('an empty colour is ignored', W.color === '#00ffcc');

@@ -1,10 +1,10 @@
 {
   "name": "rulersnx",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Illustrator-style ruler and draggable guide lines over any website. Check optical axes, alignment and spacing.",
   "private": true,
   "scripts": {
-    "test": "node test/guides.test.js && node test/exec.test.js && node test/popup.test.js && node test/persistence.test.js && node test/chrome-worker.test.cjs",
+    "test": "node test/i18n.test.js && node test/guides.test.js && node test/exec.test.js && node test/popup.test.js && node test/persistence.test.js && node test/chrome-worker.test.cjs",
     "lint": "web-ext lint",
     "build": "web-ext build",
     "build:chrome": "node scripts/build-chrome.cjs",

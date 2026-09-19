@@ -88,6 +88,8 @@ More CalendarSNX screenshots are available in [`docs/calendarSNX`](docs/calendar
 - Rulers auto-hide and only appear when the cursor reaches the top or left edge, so they
   never cover your content. That matters most in narrow layouts. The `Lineale` button
   cycles through `Auto`, `An` and `Aus`.
+- The popup lets you switch the interface between German and English. German remains the
+  default for existing and new installations, and the choice is remembered.
 - Guides are fixed to the viewport and stay put while you scroll, so you can follow one
   optical axis down a long page.
 - Everything is saved per hostname and comes back on reload.
@@ -152,6 +154,7 @@ Firefox 140 or later on desktop. Firefox for Android is not supported.
 | Rulers mode | `Lineale` button, cycling `Auto`, `An`, `Aus` |
 | Change colour | Colour swatch in the toolbar |
 | Clear everything | `Löschen` |
+| Change language | Popup: choose `Deutsch` or `English` |
 | Toggle overlay | Toolbar icon or popup |
 | Deselect | `Esc` |
 
@@ -237,7 +240,7 @@ restore, the auto-hide rulers, and the touch and responsive-mode behaviour.
 
 ```bash
 npm install    # dev-only: installs jsdom and web-ext
-npm test       # 195 assertions, headless
+npm test       # 207 assertions, headless
 npm run lint   # addons-linter — the same validator AMO runs on upload
 npm run build  # web-ext-artifacts/rulersnx_ruler_guides-<version>.zip
 npm run verify # tests + lint, the gate before a release
@@ -269,7 +272,6 @@ web-ext-config.cjs   What ships in the signed package
 - Snapping to element edges and to other guides
 - A mode where guides scroll with the document, in document coordinates
 - Distance readout between two guides
-- English UI / localization
 - Signed builds for the Chrome Web Store and Edge Add-ons
 
 ---

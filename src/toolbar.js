@@ -19,39 +19,54 @@
   function sep() { var s = make(); s.className = 'wg-sep'; return s; }
 
   function build(ctx) {
+    var i18n = globalThis.RulerSNXI18n;
+    var language = i18n.normalize(ctx.getLanguage ? ctx.getLanguage() : 'de');
+    var localized = [];
     var bar = make(); bar.className = 'wg-toolbar';
     var title = make(); title.className = 'wg-title'; title.textContent = 'RulerSNX';
     bar.appendChild(title);
-    bar.appendChild(btn('+ Vertikal', 'Vertikale Hilfslinie in der Mitte', function () { ctx.addVertical(); }));
-    bar.appendChild(btn('+ Horizontal', 'Horizontale Hilfslinie in der Mitte', function () { ctx.addHorizontal(); }));
-    bar.appendChild(btn('+ Kreuz', 'Fadenkreuz in der Mitte', function () { ctx.addCross(); }));
+    function localizedBtn(labelKey, titleKey, fn) {
+      var b = btn(labelKey ? i18n.get(language, labelKey) : '', i18n.get(language, titleKey), fn);
+      localized.push({ el: b, labelKey: labelKey, titleKey: titleKey });
+      return b;
+    }
+    bar.appendChild(localizedBtn('vertical', 'toolbarVerticalTitle', function () { ctx.addVertical(); }));
+    bar.appendChild(localizedBtn('horizontal', 'toolbarHorizontalTitle', function () { ctx.addHorizontal(); }));
+    bar.appendChild(localizedBtn('cross', 'toolbarCrossTitle', function () { ctx.addCross(); }));
     bar.appendChild(sep());
 
     var colorInput = document.createElement('input');
     colorInput.type = 'color'; colorInput.className = 'wg-color';
-    colorInput.value = ctx.getColor(); colorInput.title = 'Farbe der Hilfslinien';
+    colorInput.value = ctx.getColor(); colorInput.title = i18n.get(language, 'colorTitle');
     colorInput.addEventListener('input', function (e) { ctx.setColor(e.target.value); });
     bar.appendChild(colorInput);
     bar.appendChild(sep());
 
-    var rectBtn = btn('▭', 'Rechteck aufziehen (Standard) — Shift+Ziehen auf der Seite', function () { ctx.setShapeType('rect'); });
-    var circleBtn = btn('◯', 'Kreis/Ellipse aufziehen — Shift+Ziehen auf der Seite', function () { ctx.setShapeType('circle'); });
-    var markBtn = btn('Markieren', 'Markier-Modus an/aus: normales Ziehen zieht eine Form auf (alternativ immer Shift+Ziehen)', function () { ctx.toggleDraw(); });
+    var rectBtn = localizedBtn(null, 'rectTitle', function () { ctx.setShapeType('rect'); });
+    rectBtn.textContent = '▭';
+    var circleBtn = localizedBtn(null, 'circleTitle', function () { ctx.setShapeType('circle'); });
+    circleBtn.textContent = '◯';
+    var markBtn = localizedBtn('mark', 'markTitle', function () { ctx.toggleDraw(); });
     bar.appendChild(rectBtn); bar.appendChild(circleBtn); bar.appendChild(markBtn);
     bar.appendChild(sep());
 
-    var rulerBtn = btn('Lineale: Auto', 'Lineale: Auto (nur am Rand) → An (immer) → Aus', function () { ctx.toggleRulers(); });
+    var rulerBtn = localizedBtn(null, 'rulerTitle', function () { ctx.toggleRulers(); });
     bar.appendChild(rulerBtn);
-    bar.appendChild(btn('Löschen', 'Alle Hilfslinien löschen', function () { ctx.clearAll(); }));
+    var clearBtn = localizedBtn('clear', 'clearTitle', function () { ctx.clearAll(); });
+    bar.appendChild(clearBtn);
     bar.appendChild(sep());
-    bar.appendChild(btn('⌄', 'Leiste einklappen', function () { ctx.setBarOpen(false); }));
-    bar.appendChild(btn('✕', 'Ausblenden (Alt+G)', function () { ctx.deactivate(); }));
+    var collapseBtn = localizedBtn(null, 'collapseTitle', function () { ctx.setBarOpen(false); });
+    collapseBtn.textContent = '⌄';
+    bar.appendChild(collapseBtn);
+    var hideBtn = localizedBtn(null, 'hideTitle', function () { ctx.deactivate(); });
+    hideBtn.textContent = '✕';
+    bar.appendChild(hideBtn);
 
     // Collapsed state: a single grip in the corner. On a narrow touch viewport
     // the expanded bar would eat roughly a quarter of the screen.
     var grip = make(); grip.className = 'wg-bar-grip';
     grip.textContent = '⁘';
-    grip.title = 'RulerSNX einblenden';
+    grip.title = i18n.get(language, 'showTitle');
     grip.addEventListener('click', function () { ctx.setBarOpen(true); });
 
     function setOpen(open) {
@@ -61,7 +76,8 @@
 
     function updateRulerBtn() {
       var m = ctx.getRulerMode();
-      rulerBtn.textContent = 'Lineale: ' + (m === 'auto' ? 'Auto' : m === 'on' ? 'An' : 'Aus');
+      var modeKey = m === 'auto' ? 'rulerAuto' : m === 'on' ? 'rulerOn' : 'rulerOff';
+      rulerBtn.textContent = i18n.get(language, 'rulers') + ': ' + i18n.get(language, modeKey);
     }
     function updateShapeBtns() {
       var t = ctx.getShapeType();
@@ -70,6 +86,16 @@
       markBtn.classList.toggle('wg-on', !!ctx.getDrawArmed());
     }
     function setColorValue(hex) { colorInput.value = hex; }
+    function setLanguage(locale) {
+      language = i18n.normalize(locale);
+      localized.forEach(function (item) {
+        if (item.labelKey) item.el.textContent = i18n.get(language, item.labelKey);
+        item.el.title = i18n.get(language, item.titleKey);
+      });
+      colorInput.title = i18n.get(language, 'colorTitle');
+      grip.title = i18n.get(language, 'showTitle');
+      updateRulerBtn();
+    }
 
     return {
       bar: bar,
@@ -77,7 +103,8 @@
       setOpen: setOpen,
       updateRulerBtn: updateRulerBtn,
       updateShapeBtns: updateShapeBtns,
-      setColorValue: setColorValue
+      setColorValue: setColorValue,
+      setLanguage: setLanguage
     };
   }
 

@@ -24,6 +24,7 @@
   var restoring = false;
   var pendingChanges = [];
   var rulerMode = 'auto';     // 'auto' (reveal near edge) | 'on' (always) | 'off'
+  var language = 'de';         // toolbar locale; German preserves existing behavior
   var topShown = false, leftShown = false;
   var dragActive = false;
   var color = DEFAULT_COLOR;
@@ -116,6 +117,7 @@
     return {
       color: color,
       rulerMode: rulerMode,
+      language: language,
       shapeType: shapeType,
       barOpen: barOpen,
       guides: guides.map(function (g) { return { o: g.orient, p: Math.round(g.pos) }; }),
@@ -166,7 +168,8 @@
     if (!d) return;
     if (d.color) color = d.color;
     if (d.rulerMode) rulerMode = d.rulerMode;
-    else if (typeof d.showRulers === 'boolean') rulerMode = d.showRulers ? 'on' : 'off'; // migrate old setting
+    if (d.language && globalThis.RulerSNXI18n) language = globalThis.RulerSNXI18n.normalize(d.language);
+    if (!d.rulerMode && typeof d.showRulers === 'boolean') rulerMode = d.showRulers ? 'on' : 'off'; // migrate old setting
     if (d.shapeType) shapeType = d.shapeType;
     if (typeof d.barOpen === 'boolean') barOpen = d.barOpen;
     (d.guides || []).forEach(function (g) { makeGuide(g.o, g.p, false); });
@@ -342,6 +345,7 @@
       setColor: setColor,
       setShapeType: setShapeType,
       toggleDraw: toggleDraw,
+      getLanguage: function () { return language; },
       getBarOpen: function () { return barOpen; },
       setBarOpen: function (v) { barOpen = !!v; if (tb) tb.setOpen(barOpen); save(); },
       getRulerMode: function () { return rulerMode; },
@@ -604,6 +608,11 @@
   function setShapeType(t) { shapeType = t; updateShapeBtns(); save(); }
   function updateShapeBtns() { if (tb) tb.updateShapeBtns(); }
   function toggleDraw() { drawArmed = !drawArmed; updateShapeBtns(); }
+  function setLanguage(locale) {
+    language = globalThis.RulerSNXI18n ? globalThis.RulerSNXI18n.normalize(locale) : 'de';
+    if (tb) tb.setLanguage(language);
+    save();
+  }
 
   function inOurUI(path) {
     return path.some(function (el) {
@@ -780,6 +789,7 @@
     if (!active || !host) return;
     host.style.display = '';
     applyColor();
+    if (tb) tb.setLanguage(language);
     updateRulerBtn();
     updateShapeBtns();
     if (tb) tb.setOpen(barOpen);
@@ -818,6 +828,8 @@
     addCross: addCross,
     clearAll: clearAll,
     setColor: setColor,
+    setLanguage: setLanguage,
+    getLanguage: function () { return language; },
     checkDpr: checkDpr
   };
 })();

@@ -12,6 +12,7 @@ const { JSDOM } = require('jsdom');
 
 const SRC = path.join(__dirname, '..', 'src');
 const popupCode = fs.readFileSync(path.join(SRC, 'popup.js'), 'utf8');
+const i18nCode = fs.readFileSync(path.join(SRC, 'i18n.js'), 'utf8');
 const popupHtml = fs.readFileSync(path.join(SRC, 'popup.html'), 'utf8');
 
 let pass = 0, fail = 0;
@@ -32,6 +33,7 @@ function harness(answers) {
       return Promise.resolve(a);
     }
   };
+  win.eval(i18nCode);
   win.eval(popupCode);
   return { win, calls, doc: win.document };
 }
@@ -100,6 +102,7 @@ async function main() {
     const dom = new JSDOM(popupHtml, { url: 'moz-extension://x/popup.html', runScripts: 'outside-only' });
     const win = dom.window;
     win.RulerSNXExec = { run: () => Promise.reject(new Error('boom')) };
+    win.eval(i18nCode);
     win.eval(popupCode);
     await tick();
     ok('rejection reported, not silent', /boom/.test(win.document.getElementById('note').textContent));
@@ -111,6 +114,19 @@ async function main() {
     await tick();
     ok('no note', t.doc.getElementById('note').textContent === '');
     ok('button offers to activate', t.doc.getElementById('toggle').textContent === 'Aktivieren');
+  }
+
+  console.log('9) language selector switches popup copy and sends the command');
+  {
+    const t = harness([{ active: false, ready: false }, { active: false, ready: false }]);
+    await tick();
+    const language = t.doc.getElementById('language');
+    language.value = 'en';
+    language.dispatchEvent(new t.win.Event('change'));
+    await tick();
+    ok('language command sent', t.calls.some(c => c.cmd === 'language' && c.value === 'en'));
+    ok('popup button translated', t.doc.getElementById('toggle').textContent === 'Activate');
+    ok('popup hint translated', /Place a ruler/.test(t.doc.querySelector('.hint').textContent));
   }
 
   console.log('8) a command that leaves no engine in the page says so');

@@ -2,10 +2,10 @@
 
 RulerSNX uses the same Chromium Manifest V3 package for Chrome and Edge:
 
-`chrome-artifacts/rulersnx-chrome-1.3.1.zip`
+`chrome-artifacts/rulersnx-chrome-1.4.0.zip`
 
 The package was rebuilt from the current `main` branch and contains a Chromium service
-worker, version 1.3.1, and no Firefox-only metadata. In Edge, the unpacked build can be
+worker, version 1.4.0, and no Firefox-only metadata. In Edge, the unpacked build can be
 checked from `edge://extensions` with Developer mode and **Load unpacked** pointing to
 `dist/chrome`.
 
