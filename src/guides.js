@@ -215,7 +215,7 @@
       '.wg-corner{position:fixed;top:0;left:0;width:' + RULER + 'px;height:' + RULER + 'px;background:#26262f;pointer-events:auto;' +
         'z-index:4;display:flex;align-items:center;justify-content:center;font:9px "Segoe UI",system-ui,Arial,sans-serif;color:#8a8a97}' +
       '.wg-toolbar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:4px;align-items:center;' +
-        'flex-wrap:nowrap;justify-content:center;width:calc(100vw - 24px);max-width:1200px;box-sizing:border-box;' +
+        'flex-wrap:nowrap;justify-content:center;width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;' +
         'padding:5px 6px;border-radius:9px;background:rgba(24,24,30,.94);box-shadow:0 4px 18px rgba(0,0,0,.35);' +
         'pointer-events:auto;z-index:5;font:12px/1 "Segoe UI",system-ui,Arial,sans-serif;color:#eee}' +
       '.wg-btn{display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:6px;cursor:pointer;' +

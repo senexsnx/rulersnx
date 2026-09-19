@@ -1,6 +1,6 @@
 {
   "name": "rulersnx",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Illustrator-style ruler and draggable guide lines over any website. Check optical axes, alignment and spacing.",
   "private": true,
   "scripts": {

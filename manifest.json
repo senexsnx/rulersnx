@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RulerSNX — Ruler & Guides",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Illustrator-style ruler and draggable magenta guide lines over any website. Check optical axes, alignment and spacing. Rulers auto-hide so they never cover your content.",
   "permissions": [
     "activeTab",
