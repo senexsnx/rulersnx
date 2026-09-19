@@ -1,12 +1,14 @@
 /*
  * RulerSNX — Illustrator-style ruler & draggable guide lines for any website.
  * Self-contained: works both as a content script and included directly in a page.
- * Exposes window.WebGuides = { activate, deactivate, toggle, isActive, addVertical,
+ * Exposes globalThis.WebGuides = { activate, deactivate, toggle, isActive, addVertical,
  *                              addHorizontal, addCross, clearAll, setColor }
  */
 (function () {
   'use strict';
-  if (window.WebGuides) return; // guard against double-injection
+  // globalThis is the content-script sandbox, which the command function
+  // injected afterwards shares — that is where the engine is published.
+  if (globalThis.WebGuides) return; // guard against double-injection
 
   var RULER = 22;              // ruler thickness in px
   var HIT = 11;               // guide grab-strip thickness in px (mouse)
@@ -34,6 +36,7 @@
   var revealed = false;       // coarse mode: rulers pulled in via the corner grip
   var barOpen = true;         // toolbar expanded; collapsed to a grip on touch
   var lastDpr = 0;            // DPR the rulers were last drawn at
+  var scrollPending = false;  // a scroll redraw is already queued for this frame
 
   // ---------- small helpers ----------
   function css(el, styles) { for (var k in styles) el.style[k] = styles[k]; return el; }
@@ -66,6 +69,18 @@
   // Current grab width. The visible line stays 1px either way — only the
   // invisible strip you can grab gets wider.
   function hit() { return coarse ? HIT_COARSE : HIT; }
+
+  // ---------- coordinate system ----------
+  // Guides and shapes are stored in DOCUMENT coordinates: the origin is the top
+  // left of the page, not of the window. That is what makes a guide stay on the
+  // element you dropped it on while you scroll, and what lets the ruler keep
+  // counting past the fold. Everything the pointer reports is viewport-relative,
+  // so every read of e.clientX/Y has to cross this boundary exactly once.
+  function scrollX() { return window.pageXOffset || (document.documentElement && document.documentElement.scrollLeft) || 0; }
+  function scrollY() { return window.pageYOffset || (document.documentElement && document.documentElement.scrollTop) || 0; }
+  function scrollFor(orient) { return orient === 'v' ? scrollX() : scrollY(); }
+  // Viewport pixel -> document position, for the axis a guide lives on.
+  function docPos(orient, client) { return client + scrollFor(orient); }
   // CSS carries every visual consequence of the flag; JS only flips it.
   function applyCoarse() {
     if (!host) return;
@@ -257,6 +272,12 @@
       toggleRulerReveal();
     });
     window.addEventListener('resize', onResize, true);
+    // On DOCUMENT, capturing. A page scroll fires its event at the document,
+    // and a capturing listener on the content script's window proxy does not
+    // see it — measured in Firefox 156, where the window listener stayed silent
+    // through a real scrollTo() while a synthetic window event reached it.
+    // Capturing here also picks up scrolls inside nested scroll containers.
+    document.addEventListener('scroll', onScroll, true);
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', syncVisualViewport);
       window.visualViewport.addEventListener('scroll', syncVisualViewport);
@@ -311,7 +332,7 @@
   }
 
   function buildToolbar() {
-    tb = window.RulerSNXToolbar.build({
+    tb = globalThis.RulerSNXToolbar.build({
       addVertical: function () { addVertical(); },
       addHorizontal: function () { addHorizontal(); },
       addCross: function () { addCross(); },
@@ -370,23 +391,32 @@
     host.style.width = (vv.width * vv.scale) + 'px';
     host.style.height = (vv.height * vv.scale) + 'px';
   }
+  // The scale is drawn in viewport pixels but LABELLED in document coordinates,
+  // so scrolling 1400px down makes the top of the left ruler read 1400. Ticks
+  // stay on round page positions rather than round window positions, which is
+  // what makes them line up with the same element after a scroll.
   function drawScale(ctx, orient, len) {
+    var off = orient === 'h' ? scrollX() : scrollY();
     ctx.clearRect(0, 0, orient === 'h' ? len : RULER, orient === 'h' ? RULER : len);
     ctx.strokeStyle = 'rgba(200,200,210,.55)';
     ctx.fillStyle = 'rgba(220,220,230,.85)';
     ctx.font = '8px "Segoe UI",system-ui,Arial,sans-serif';
     ctx.textBaseline = 'top';
     ctx.lineWidth = 1;
-    for (var p = 0; p <= len; p += 5) {
-      var major = p % 100 === 0, med = p % 50 === 0;
+    for (var d = Math.floor(off / 5) * 5; d <= off + len; d += 5) {
+      var p = d - off; // viewport pixel this document position lands on
+      if (p < 0) continue;
+      var major = d % 100 === 0, med = d % 50 === 0;
       var t = major ? RULER : med ? RULER * 0.6 : RULER * 0.35;
       ctx.beginPath();
       if (orient === 'h') { var x = p + 0.5; ctx.moveTo(x, RULER); ctx.lineTo(x, RULER - t); }
       else { var y = p + 0.5; ctx.moveTo(RULER, y); ctx.lineTo(RULER - t, y); }
       ctx.stroke();
-      if (major && p > 0) {
-        if (orient === 'h') ctx.fillText(String(p), p + 2, 2);
-        else ctx.fillText(String(p), 2, p + 2);
+      // Anything inside the first RULER px sits under the corner box and would
+      // only ever be half-legible — the next major tick carries the number.
+      if (major && p >= RULER) {
+        if (orient === 'h') ctx.fillText(String(d), p + 2, 2);
+        else ctx.fillText(String(d), 2, p + 2);
       }
     }
   }
@@ -448,22 +478,28 @@
     if (doSave !== false) save();
     return g;
   }
-  // Render only — never writes g.pos. A guide outside the current viewport is
-  // hidden but keeps its position, so switching viewport widths is lossless.
+  // Render only — never writes g.pos. g.pos is a document coordinate; the wrap
+  // is position:fixed, so scrolling it out of the window is what the offset does.
+  // A guide outside the current viewport is hidden but keeps its position, so
+  // scrolling and switching viewport widths are both lossless.
   function renderGuide(g) {
     var max = g.orient === 'v' ? window.innerWidth : window.innerHeight;
-    var visible = g.pos >= 0 && g.pos <= max;
+    var view = g.pos - scrollFor(g.orient);
+    var visible = view >= 0 && view <= max;
     g.wrap.style.display = visible ? '' : 'none';
     if (!visible) return;
     g.wrap.style.transform = g.orient === 'v'
-      ? 'translateX(' + (g.pos - hit() / 2) + 'px)'
-      : 'translateY(' + (g.pos - hit() / 2) + 'px)';
+      ? 'translateX(' + (view - hit() / 2) + 'px)'
+      : 'translateY(' + (view - hit() / 2) + 'px)';
+    // The label names the position on the page, which is what the ruler shows.
     g.label.textContent = Math.round(g.pos) + ' px';
   }
-  // User interaction only: clamp into the viewport, then render.
+  // User interaction only: takes a document position and clamps it into the band
+  // that is currently on screen, so a drag can never lose the guide off-window.
   function setGuidePos(g, pos) {
-    var max = g.orient === 'v' ? window.innerWidth : window.innerHeight;
-    g.pos = Math.max(0, Math.min(pos, max));
+    var off = scrollFor(g.orient);
+    var max = off + (g.orient === 'v' ? window.innerWidth : window.innerHeight);
+    g.pos = Math.max(off, Math.min(pos, max));
     renderGuide(g);
   }
   function showLabel(g, on) { g.label.style.display = on ? 'block' : 'none'; }
@@ -536,10 +572,18 @@
     if (doSave !== false) save();
     return s;
   }
+  // x/y are document coordinates, like a guide's pos.
   function setShapeRect(s, x, y, w, h) {
     s.x = x; s.y = y; s.w = w; s.h = h;
-    s.el.style.left = x + 'px'; s.el.style.top = y + 'px';
-    s.el.style.width = w + 'px'; s.el.style.height = h + 'px';
+    renderShape(s);
+  }
+  // Render only — never writes the stored rect. The element is position:fixed,
+  // so the scroll offset is what keeps it over the same part of the page.
+  function renderShape(s) {
+    s.el.style.left = (s.x - scrollX()) + 'px';
+    s.el.style.top = (s.y - scrollY()) + 'px';
+    s.el.style.width = s.w + 'px';
+    s.el.style.height = s.h + 'px';
   }
   function removeShape(s) {
     var i = shapes.indexOf(s);
@@ -550,8 +594,10 @@
   }
   function startMoveShape(e, s) {
     e.preventDefault(); e.stopPropagation();
-    var ox = e.clientX - s.x, oy = e.clientY - s.y;
-    function move(ev) { setShapeRect(s, ev.clientX - ox, ev.clientY - oy, s.w, s.h); }
+    var ox = e.clientX + scrollX() - s.x, oy = e.clientY + scrollY() - s.y;
+    function move(ev) {
+      setShapeRect(s, ev.clientX + scrollX() - ox, ev.clientY + scrollY() - oy, s.w, s.h);
+    }
     function done() { save(); selectItem(s); }
     dragLoop(move, done, s.el, e.pointerId);
   }
@@ -573,17 +619,17 @@
     if (!(e.shiftKey || drawArmed)) return;
     var path = e.composedPath ? e.composedPath() : [];
     if (inOurUI(path)) return; // rulers/guides/shapes/toolbar handle their own presses
-    var sx = e.clientX, sy = e.clientY, s = null;
+    var sx = e.clientX + scrollX(), sy = e.clientY + scrollY(), s = null;
     function move(ev) {
+      var cx = ev.clientX + scrollX(), cy = ev.clientY + scrollY();
       if (!s) {
-        if (Math.abs(ev.clientX - sx) < 3 && Math.abs(ev.clientY - sy) < 3) return; // wait for a real drag
+        if (Math.abs(cx - sx) < 3 && Math.abs(cy - sy) < 3) return; // wait for a real drag
         s = makeShape(shapeType, sx, sy, 0, 0, false);
       }
       ev.preventDefault();
       var sel = window.getSelection && window.getSelection();
       if (sel && sel.removeAllRanges) sel.removeAllRanges(); // don't leave a text selection behind
-      setShapeRect(s, Math.min(sx, ev.clientX), Math.min(sy, ev.clientY),
-        Math.abs(ev.clientX - sx), Math.abs(ev.clientY - sy));
+      setShapeRect(s, Math.min(sx, cx), Math.min(sy, cy), Math.abs(cx - sx), Math.abs(cy - sy));
     }
     function done() { if (s) { save(); selectItem(s); } }
     dragLoop(move, done, e.currentTarget, e.pointerId);
@@ -620,7 +666,7 @@
       var c = orient === 'v' ? ev.clientX : ev.clientY;
       if (startC === null) startC = c;
       if (Math.abs(c - startC) > 3) moved = true;
-      setGuidePos(g, c);
+      setGuidePos(g, docPos(orient, c));
     }
     function done(ev, cancelled) {
       dragActive = false;
@@ -636,7 +682,7 @@
   }
   function startCreate(e, orient) {
     e.preventDefault();
-    var g = makeGuide(orient, orient === 'v' ? e.clientX : e.clientY, false);
+    var g = makeGuide(orient, docPos(orient, orient === 'v' ? e.clientX : e.clientY), false);
     beginDrag(orient, g, e.currentTarget, e.pointerId);
   }
   function startMove(e, g) {
@@ -669,6 +715,32 @@
     drawRulers();
     syncVisualViewport();
     guides.forEach(renderGuide);
+    shapes.forEach(renderShape);
+  }
+  /*
+   * Scrolling moves the page under a fixed overlay, so every stored position has
+   * to be re-projected and the ruler re-labelled. Coalesced into one frame: a
+   * scroll event can fire far more often than the browser paints, and redrawing
+   * two canvases per event is exactly the kind of thing that makes a page feel
+   * heavy to scroll.
+   */
+  // requestAnimationFrame must be called ON window: pulling it out into a bare
+  // variable and calling it detached throws "Illegal invocation", and the throw
+  // is invisible inside an event handler — the scroll listener looked dead.
+  function nextFrame(fn) {
+    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(fn);
+    else setTimeout(fn, 16);
+  }
+  function onScroll() {
+    if (!active || scrollPending) return;
+    scrollPending = true;
+    nextFrame(function () {
+      scrollPending = false;
+      if (!active) return;
+      guides.forEach(renderGuide);
+      shapes.forEach(renderShape);
+      if (rulerMode !== 'off') drawRulers();
+    });
   }
   function initialize() {
     if (host) return;
@@ -676,13 +748,22 @@
     build();
     // Do not expose interactive controls until the saved state is available.
     host.style.display = 'none';
-    restore(function () {
+    // Runs at most twice and is safe either way: the second pass drains an
+    // empty queue and simply re-applies the state that has since landed.
+    function reveal() {
       restoring = false;
       var changes = pendingChanges;
       pendingChanges = [];
-      changes.forEach(function (change) { change(); });
+      // One throwing queued command must not cost the overlay its reveal —
+      // applyLoaded() below is the only line that undoes display:none.
+      try { changes.forEach(function (change) { change(); }); } catch (e) {}
       applyLoaded();
-    });
+    }
+    // A storage read that never answers must not hide the overlay for good:
+    // showing up matters more than restoring yesterday's guides. initialize()
+    // returns early once host exists, so without this there is no second chance.
+    var guard = setTimeout(reveal, 1500);
+    restore(function () { clearTimeout(guard); reveal(); });
   }
   function afterRestore(change) {
     initialize();
@@ -715,15 +796,19 @@
   // ---------- public API ----------
   function addVertical(x) {
     if (!active) activate();
-    afterRestore(function () { makeGuide('v', typeof x === 'number' ? x : window.innerWidth / 2); });
+    afterRestore(function () {
+      makeGuide('v', typeof x === 'number' ? x : scrollX() + window.innerWidth / 2);
+    });
   }
   function addHorizontal(y) {
     if (!active) activate();
-    afterRestore(function () { makeGuide('h', typeof y === 'number' ? y : window.innerHeight / 2); });
+    afterRestore(function () {
+      makeGuide('h', typeof y === 'number' ? y : scrollY() + window.innerHeight / 2);
+    });
   }
   function addCross() { addVertical(); addHorizontal(); }
 
-  window.WebGuides = {
+  globalThis.WebGuides = {
     activate: activate,
     deactivate: deactivate,
     toggle: toggle,

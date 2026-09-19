@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.1 — 2026-09-19
+
+- Limit the Firefox package to desktop Firefox; Firefox for Android is not supported by the current UI.
+- Remove the Android compatibility declaration so AMO does not offer this version for mobile.
+- Document popup activation and the working Shift+drag marker gesture.
+
+## 1.3.0 — 2026-09-19
+
+- Fix popup activation in Firefox by loading the injection engine from root-absolute paths.
+- Surface script-injection failures in the popup instead of silently ignoring clicks.
+- Share the injected engine through `globalThis` so popup commands work reliably in Firefox MV3.
+- Anchor guides, markers, and ruler labels to document coordinates so they stay aligned while scrolling.
+- Add popup regression coverage; the full suite now passes 195 assertions.
+- Firefox package validated with `web-ext lint`: 0 errors, 0 warnings, 0 notices.
+
 ## 1.2.0 — 2026-09-16
 
 - Activate only when requested from the popup or Alt+G. Removes automatic scripts

@@ -5,7 +5,9 @@
  */
 (function () {
   'use strict';
-  if (window.RulerSNXToolbar) return; // guard against double-injection
+  // globalThis is the content-script sandbox, shared by every script this
+  // add-on injects into the tab — the unambiguous place to hand the engine over.
+  if (globalThis.RulerSNXToolbar) return; // guard against double-injection
 
   function css(el, styles) { for (var k in styles) el.style[k] = styles[k]; return el; }
   function make(tag, styles) { return css(document.createElement(tag || 'div'), styles || {}); }
@@ -79,5 +81,5 @@
     };
   }
 
-  window.RulerSNXToolbar = { build: build };
+  globalThis.RulerSNXToolbar = { build: build };
 })();

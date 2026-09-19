@@ -60,5 +60,23 @@ function harness() {
   assert.equal(h.saved().guides.length, 3);
   assert.equal(h.W.isActive(), false, 'finishing restore must not reactivate the overlay');
   h.dom.window.close();
-  console.log('10 asynchronous persistence assertions passed');
+  // The storage read that never answers. Before the reveal guard this left the
+  // overlay at display:none for good while exec.js happily reported active:true
+  // — the add-on looked completely dead and no click could recover it.
+  h = harness();
+  h.W.activate();
+  const hostEl = () => h.dom.window.document.getElementById('rulersnx-host');
+  assert.equal(hostEl().style.display, 'none', 'stays hidden while the read is outstanding');
+  assert.equal(h.W.isActive(), true, 'yet it already reports itself active');
+  await new Promise(r => setTimeout(r, 1700));
+  assert.equal(hostEl().style.display, '', 'the reveal guard un-hides it anyway');
+  h.dom.window.close();
+
+  h = harness();
+  h.W.addCross();
+  await new Promise(r => setTimeout(r, 1700));
+  assert.equal(h.guides().length, 2, 'a queued crosshair still runs when storage never answers');
+  h.dom.window.close();
+
+  console.log('14 asynchronous persistence assertions passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

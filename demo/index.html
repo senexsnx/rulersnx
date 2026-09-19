@@ -31,7 +31,7 @@
        Die Lineale blenden sich automatisch ein, sobald du an den oberen/linken Rand fährst — so verdecken sie nie den Inhalt.<br>
        <b>Markieren:</b> unten die Form wählen (▭ Rechteck / ◯ Kreis) und mit <b>Shift + Ziehen</b> eine Stelle einrahmen — ideal, um sie einem Kollegen oder einer KI zu zeigen.</p>
     <div class="bar">
-      <button class="primary" onclick="WebGuides.toggle()">Guides an/aus (Alt+G)</button>
+      <button class="primary" onclick="WebGuides.toggle()">Guides an/aus</button>
       <button onclick="WebGuides.addCross()">Fadenkreuz (Mitte)</button>
       <button onclick="WebGuides.clearAll()">Alle löschen</button>
     </div>
@@ -55,6 +55,7 @@
     </p>
   </main>
 
+  <script src="../src/toolbar.js"></script>
   <script src="../src/guides.js"></script>
   <script>WebGuides.activate();</script>
 </body>

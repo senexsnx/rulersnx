@@ -511,5 +511,88 @@ ok('activate survived a throwing backend', !!wH.document.getElementById('rulersn
 ok('guide still drawn', wH.document.getElementById('rulersnx-host').shadowRoot.querySelectorAll('.wg-guide').length === 1);
 ok('nothing leaked into the page', wH.localStorage.getItem('rulersnx:example.com') === null);
 
+console.log('scroll) guides and rulers are anchored to the DOCUMENT, not the window');
+{
+  // Everything is stored in document coordinates, so a guide dropped on an
+  // element stays on it while the page scrolls, and the left ruler keeps
+  // counting past the fold instead of restarting at 0 on every screen.
+  const d = new JSDOM('<!DOCTYPE html><html><body><h1>t</h1></body></html>', {
+    url: 'https://example.com/', runScripts: 'outside-only', pretendToBeVisual: true
+  });
+  const w = d.window;
+  let sx = 0, sy = 0;
+  Object.defineProperty(w, 'pageXOffset', { get: () => sx, configurable: true });
+  Object.defineProperty(w, 'pageYOffset', { get: () => sy, configurable: true });
+
+  // Record every listener the engine registers, so the scroll wiring itself can
+  // be asserted — not just the arithmetic behind it.
+  const listeners = [];
+  const wAdd = w.addEventListener.bind(w);
+  const dAdd = w.document.addEventListener.bind(w.document);
+  w.addEventListener = (t, f, c) => { listeners.push(['window', t, c]); return wAdd(t, f, c); };
+  w.document.addEventListener = (t, f, c) => { listeners.push(['document', t, c]); return dAdd(t, f, c); };
+
+  // requestAnimationFrame refuses a detached call, exactly like the real one.
+  // Calling it as a bare variable throws "Illegal invocation", and inside an
+  // event handler that throw is invisible — the scroll listener looks dead.
+  const frames = [];
+  w.requestAnimationFrame = function (cb) {
+    if (this !== w) throw new TypeError('Illegal invocation');
+    frames.push(cb);
+    return frames.length;
+  };
+  const runFrame = () => { const q = frames.splice(0); q.forEach((f) => f()); };
+
+  const painted = [];
+  w.HTMLCanvasElement.prototype.getContext = function () {
+    return {
+      setTransform() {}, clearRect() {}, beginPath() {}, moveTo() {}, lineTo() {},
+      stroke() {}, fillText(t) { painted.push(String(t)); },
+      strokeStyle: '', fillStyle: '', font: '', textBaseline: '', lineWidth: 0
+    };
+  };
+  boot(w);
+  const E = w.WebGuides;
+  E.activate();
+  const sh = () => w.document.getElementById('rulersnx-host').shadowRoot;
+  const hGuides = () => sh().querySelectorAll('.wg-guide-h');
+
+  // A page scroll fires at the document; a capturing listener on the content
+  // script's window proxy never sees it. Measured in Firefox 156.
+  const scrollReg = listeners.filter((l) => l[1] === 'scroll' && l[0] === 'document');
+  ok('scroll is listened for on the document', scrollReg.length === 1);
+  ok('and it captures, so nested scrollers count too', scrollReg[0] && scrollReg[0][2] === true);
+
+  const scroll = (to) => {
+    sy = to;
+    w.document.dispatchEvent(new w.Event('scroll'));
+    runFrame();
+  };
+
+  E.addHorizontal(422);
+  ok('unscrolled: drawn where it was placed', /translateY\(41[0-9]/.test(hGuides()[0].style.transform));
+
+  scroll(200);
+  ok('scrolled 200: the guide travels up with the page',
+    /translateY\(21[0-9]/.test(hGuides()[0].style.transform));
+  ok('its label still names the same place on the page',
+    hGuides()[0].querySelector('.wg-label').textContent === '422 px');
+  ok('and it is still on screen', hGuides()[0].style.display !== 'none');
+
+  scroll(900);
+  ok('scrolled past it: the guide leaves the window', hGuides()[0].style.display === 'none');
+
+  scroll(0);
+  ok('scrolling back brings it right where it was',
+    hGuides()[0].style.display !== 'none' && /translateY\(41[0-9]/.test(hGuides()[0].style.transform));
+
+  sx = 500; sy = 500;
+  painted.length = 0;
+  w.dispatchEvent(new w.Event('resize'));
+  ok('ruler labels continue past the fold', painted.indexOf('600') !== -1);
+  ok('and reach positions no window is that tall for', painted.indexOf('1200') !== -1);
+  ok('neither ruler restarts at 100 on every screen', painted.indexOf('100') === -1);
+}
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

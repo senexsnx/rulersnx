@@ -2,7 +2,7 @@
  * Covers src/exec.js — the only code that can put anything into a web page.
  * The engine itself is exercised by guides.test.js; what matters here is that
  * nothing is injected unless a command asks for it, and that an unscriptable
- * tab fails quietly instead of throwing at the popup.
+ * tab returns a readable error instead of throwing at the popup.
  */
 const fs = require('fs');
 const path = require('path');
@@ -28,6 +28,11 @@ function harness(opts) {
       executeScript: (o) => {
         calls.push(o);
         if (opts.reject) return Promise.reject(new Error('Missing host permission for the tab'));
+        // A file that cannot be loaded resolves with an `error` per frame — it
+        // does NOT reject. That shape is what hid the /src/src/ path bug.
+        if (o.files && opts.fileError) {
+          return Promise.resolve([{ frameId: 0, error: { message: opts.fileError } }]);
+        }
         if (o.files) return Promise.resolve(o.files.map(() => ({ result: undefined })));
         // Same as the browser does: run the serialized function in the page world.
         const fn = win.eval('(' + o.func.toString() + ')');
@@ -64,7 +69,7 @@ async function main() {
     const state = await t.exec.run('toggle');
     ok('two executeScript calls (files, then func)', t.calls.length === 2);
     ok('engine files injected in order',
-      JSON.stringify(t.calls[0].files) === JSON.stringify(['src/toolbar.js', 'src/guides.js']));
+      JSON.stringify(t.calls[0].files) === JSON.stringify(['/src/toolbar.js', '/src/guides.js']));
     ok('targets the resolved tab', t.calls[0].target.tabId === 7);
     ok('toggle reached the engine', W.isActive() === true);
     ok('state reported back', state && state.active === true && state.ready === true);
@@ -88,11 +93,11 @@ async function main() {
     ok('active=false', state && state.active === false);
   }
 
-  console.log('4) an unscriptable tab resolves to null');
+  console.log('4) an unscriptable tab returns a readable error');
   {
     const t = harness({ reject: true });
     const state = await t.exec.run('toggle');
-    ok('null, not a rejection', state === null);
+    ok('error returned, not a rejection', state && /Missing host permission/.test(state.error));
   }
 
   console.log('5) no active tab resolves to null and injects nothing');
@@ -127,6 +132,32 @@ async function main() {
     const state = await t.exec.run('nonsense');
     ok('still active', W.isActive() === true);
     ok('state still reported', state && state.active === true);
+  }
+
+  console.log('8) engine paths are root-absolute, not relative to the caller');
+  {
+    // exec.js runs in the background page (document at the add-on root) AND in
+    // the popup (document at /src/popup.html). Firefox resolves `files` against
+    // the CALLING document, so a bare 'src/...' asked the popup for
+    // /src/src/toolbar.js: the shortcut worked while every popup button did
+    // nothing at all. Only the leading slash is right in both contexts.
+    const t = harness();
+    engine(t.win, false);
+    await t.exec.run('toggle');
+    const injected = t.calls.filter((c) => c.files)[0];
+    ok('engine injected', !!injected);
+    ok('every path is root-absolute', injected.files.every((f) => f.charAt(0) === '/'));
+  }
+
+  console.log('9) a file that fails to load is reported, not swallowed');
+  {
+    const t = harness({ fileError: 'Unable to load script: moz-extension://x/src/src/toolbar.js' });
+    engine(t.win, false);
+    const state = await t.exec.run('toggle');
+    ok('error surfaced to the popup', !!(state && state.error));
+    ok('names the failing script', /Unable to load script/.test((state && state.error) || ''));
+    ok('the command is not applied on top of a missing engine',
+      t.calls.filter((c) => c.func).length === 0);
   }
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');

@@ -9,7 +9,7 @@ Everything a submission needs, in the order AMO asks for it. The short version:
 
 ```bash
 npm install
-npm run verify   # 157 assertions + addons-linter, must end on "errors 0 / warnings 0"
+npm run verify   # 195 assertions + addons-linter; errors 0, with one expected Android compatibility warning
 npm run build    # web-ext-artifacts/rulersnx_ruler_guides-<version>.zip
 ```
 
@@ -19,7 +19,9 @@ Then walk the add-on once by hand, because the linter cannot:
 - [ ] On a normal website: icon → `Aktivieren`, pull a guide out of each ruler, move it,
       select it, delete it with `Entf`
 - [ ] `Shift` + drag draws a marker; `Markieren` arms plain dragging
-- [ ] `Alt + G` switches the overlay off and on
+- [ ] Activate and deactivate through the popup; Alt+G is currently unavailable in Firefox
+- [ ] On a tall page: place a horizontal guide on an element, scroll — the guide stays on
+      that element and the left ruler keeps counting (1400, not back to 0)
 - [ ] Reload the page, switch the overlay on again — the guides are back
 - [ ] On `about:support`: the popup shows the "Auf dieser Seite nicht möglich" hint
       instead of a dead button
@@ -39,9 +41,9 @@ Then walk the add-on once by hand, because the linter cannot:
 | Minified / bundled code | none, so **no source-code upload is required** |
 | Third-party libraries | none at runtime |
 | Data collection | declared as `none` in the manifest |
-| Linter | `web-ext lint`: 0 errors, 0 warnings, 0 notices |
+| Linter | `web-ext lint`: 0 errors, 1 expected Android compatibility warning, 0 notices |
 
-The package holds only `manifest.json`, `LICENSE`, `icons/` and `src/`.
+The package holds only `manifest.json`, `LICENSE`, `icons/` and `src/` — about 46 KB.
 Tests, docs and the demo are excluded through `web-ext-config.cjs`.
 
 ---
@@ -66,20 +68,20 @@ Tests, docs and the demo are excluded through `web-ext-config.cjs`.
 > - Rulers along the top and left edge with a live px scale, drawn on canvas so they stay
 >   crisp on HiDPI screens.
 > - Drag down from the top ruler for a horizontal guide, right from the left ruler for a
->   vertical one. Guides carry a live px label and stay fixed while you scroll.
+>   vertical one. Guides carry a live px label and are anchored to the page, so a guide
+>   you drop on an element stays on it while you scroll.
 > - Region markers: draw a rectangle or circle around an area, screenshot it, send it. It
 >   saves a paragraph of explaining which element you mean.
 > - Rulers auto-hide and only appear when the cursor reaches an edge, so they never cover
->   the page.
+>   the page. The scale counts in page coordinates and keeps counting past the fold.
 > - Guides, markers and colour are remembered per website and come back the next time you
 >   switch the overlay on there.
 > - Works with a finger too: larger grab zones and a collapsed toolbar on touch.
 >
-> How to use it: open any website, click the RulerSNX icon and choose "Aktivieren", or
-> press Alt+G. Drag a guide out of a ruler. Click a guide and press Entf to delete it.
+> How to use it: open any website, click the RulerSNX icon and choose "Aktivieren". Drag a guide out of a ruler. Click a guide and press Entf to delete it.
 >
 > Privacy: RulerSNX makes no network requests and transmits no data. It uses temporary
-> access to the active tab after you click its icon or press the shortcut. There is no
+> access to the active tab after you click its icon and choose a popup action. There is no
 > permanent permission to access all websites. Guides and settings are saved locally,
 > grouped by website hostname.
 >
@@ -123,8 +125,8 @@ anyway if you want the field filled.
 > uninstall the add-on.
 >
 > RulerSNX uses activeTab for temporary access to the tab you choose. It declares no
-> permanent host permissions. The drawing engine loads when you choose a popup action or
-> use the keyboard shortcut. It does not read page text or form values. The browser
+> permanent host permissions. The drawing engine loads when you choose a popup action.
+> It does not read page text or form values. The browser
 > controls the lifetime of the temporary tab permission.
 >
 > Support is available through the developer contact on the add-on listing.
@@ -139,11 +141,11 @@ anyway if you want the field filled.
 > No build step. The files in the package are the source, unminified and unbundled, with no
 > runtime dependencies — nothing needs to be reproduced from a source archive.
 >
-> There are no host permissions. `src/background.js` listens for the Alt+G command and
-> `src/popup.js` handles the popup buttons; both call `RulerSNXExec.run()` in `src/exec.js`,
+> There are no host permissions. `src/popup.js` handles the popup buttons and calls
+> `RulerSNXExec.run()` in `src/exec.js`,
 > which is the single place anything is injected. It uses `scripting.executeScript` against
-> the active tab, which is reachable only because the user's click or shortcut press just
-> granted `activeTab`. The `state` command deliberately injects no files — it only asks
+> the active tab, which is reachable only because the user's popup action just granted
+> `activeTab`. The `state` command deliberately injects no files — it only asks
 > whether the engine is already present, so merely opening the popup changes nothing.
 >
 > `src/toolbar.js` and `src/guides.js` are the injected overlay. They render into a Shadow
@@ -160,7 +162,25 @@ anyway if you want the field filled.
 
 ---
 
-## 7. Version notes for 1.2.0
+## 7. Version notes
+
+### 1.3.0
+
+> - Guides, markers and the ruler scale are anchored to the page instead of the window. A
+>   guide you drop on an element now stays on it while you scroll, and the ruler keeps
+>   counting in page coordinates instead of restarting at 0 on every screen.
+> - Fixed: every popup button did nothing. The engine was injected under a path that only
+>   resolved from the background page, so the Alt+G shortcut worked while the popup silently
+>   failed. A script that cannot be loaded does not reject the injection call, so the error
+>   was never surfaced — it is now.
+> - The popup always says why a command did not take effect instead of ignoring clicks.
+> - The overlay can no longer stay invisible if the storage read never answers.
+
+Because guide coordinates now mean a position on the page rather than in the window, guides
+saved by an earlier version shift once on first use. Worth a line in the version notes on
+AMO so nobody reports it as a bug.
+
+### 1.2.0
 
 > - Dropped the `<all_urls>` content script. RulerSNX now runs on a page only when you click
 >   its icon or press Alt+G, using `activeTab`, and asks for no access to your websites.

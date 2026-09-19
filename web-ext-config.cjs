@@ -17,8 +17,6 @@ module.exports = {
     'web-ext-config.cjs',
     'web-ext-artifacts',
     'README.md',
-    'CHANGELOG.md',
-    '*.log',
     '*.zip'
   ],
   build: {

@@ -8,3 +8,4 @@ web-ext-artifacts/
 chrome-artifacts/
 dist/
 verification.log
+source-package-*/
