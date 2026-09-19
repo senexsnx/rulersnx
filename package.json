@@ -8,6 +8,7 @@
     "lint": "web-ext lint",
     "build": "web-ext build",
     "build:chrome": "node scripts/build-chrome.cjs",
+    "build:safari": "node scripts/build-safari.cjs",
     "start": "web-ext run",
     "verify": "npm test && npm run lint"
   },

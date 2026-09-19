@@ -91,8 +91,17 @@ This release is packaged for Firefox using a Manifest V3 background event page.
 
 Run `npm run build:chrome` to generate `chrome-artifacts/rulersnx-chrome-<version>.zip`
 and the unpacked `dist/chrome` directory. This build uses a Manifest V3 service worker
-and requires Chromium 102 or later. In `chrome://extensions`, enable developer mode,
-choose **Load unpacked**, and select `dist/chrome`. The root manifest remains Firefox-specific.
+and requires Chromium 102 or later. In `chrome://extensions` or `edge://extensions`, enable
+developer mode, choose **Load unpacked**, and select `dist/chrome`. The same ZIP is used
+for Chrome Web Store and Microsoft Edge Add-ons submissions. The root manifest remains
+Firefox-specific.
+
+### Safari
+
+The current Chromium package can be prepared for Safari with `npm run build:safari`,
+which writes `safari-artifacts/rulersnx-safari-<version>.zip`. Safari requires Apple's
+Safari Web Extension Packager and an Apple Developer Program account for signing and
+App Store Connect submission; the package is intended for that final conversion step.
 
 ### Firefox
 
